@@ -19,8 +19,12 @@ const string URL = "wss://api.gateio.ws/ws/v4/";
 
 void processMsg(OrderBook& ob, const string& msg) {
     json j = nlohmann::json::parse(msg);
-    for (const auto& lv: j["result"]["b"]) ob.updateLevel(true, lv[0], lv[1]);
-    for (const auto& lv: j["result"]["a"]) ob.updateLevel(false, lv[0], lv[1]);
+    for (const auto& lv: j["result"]["b"]) {
+        ob.updateLevel(MktData::GateIo, true, lv[0], lv[1]);
+    }
+    for (const auto& lv: j["result"]["a"]) {
+        ob.updateLevel(MktData::GateIo, false, lv[0], lv[1]);
+    }
     ob.print();
 }
 

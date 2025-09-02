@@ -28,8 +28,12 @@ const string SUBS_MSG = R"({
 void processMsg(OrderBook& ob, const string& msg) {
     json j = nlohmann::json::parse(msg);
     for (auto& d: j["data"]) {
-        for (const auto& lv: d["bids"]) ob.updateLevel(true, lv[0], lv[1]);
-        for (const auto& lv: d["asks"]) ob.updateLevel(false, lv[0], lv[1]);
+        for (const auto& lv: d["bids"]) {
+            ob.updateLevel(MktData::Okx, true, lv[0], lv[1]);
+        }
+        for (const auto& lv: d["asks"]) {
+            ob.updateLevel(MktData::Okx, false, lv[0], lv[1]);
+        }
     }
     ob.print();
 }

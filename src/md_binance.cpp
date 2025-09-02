@@ -25,8 +25,12 @@ uint64_t getInitOb() {
     cpr::Response r = cpr::Get(cpr::Url{OB_REQ});
     try {
         json j = nlohmann::json::parse(r.text);
-        for (const auto& lv: j["bids"]) ob.updateLevel(true, lv[0], lv[1]);
-        for (const auto& lv: j["asks"]) ob.updateLevel(false, lv[0], lv[1]);
+        for (const auto& lv: j["bids"]) {
+            ob.updateLevel(MktData::Binance, true, lv[0], lv[1]);
+        }
+        for (const auto& lv: j["asks"]) {
+            ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
+        }
         cout << "INIT " << j["lastUpdateId"] << endl;
         return j["lastUpdateId"];
     } catch (...) {
@@ -36,8 +40,12 @@ uint64_t getInitOb() {
 }
 
 void processMsg(const json& j) {
-    for (const auto& lv: j["b"]) ob.updateLevel(true, lv[0], lv[1]);
-    for (const auto& lv: j["a"]) ob.updateLevel(false, lv[0], lv[1]);
+    for (const auto& lv: j["b"]) {
+        ob.updateLevel(MktData::Binance, true, lv[0], lv[1]);
+    }
+    for (const auto& lv: j["a"]) {
+        ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
+    }
     ob.print();
 }
 

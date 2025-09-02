@@ -1,3 +1,5 @@
+#pragma once
+
 namespace htask {
 namespace md_okx {
 
