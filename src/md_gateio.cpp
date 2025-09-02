@@ -35,7 +35,7 @@ void work() {
                     cout << "Received message: " << msg->str << endl;
                     processMsg(ob, msg->str);
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
-                    cout << "Connection opened" << endl;
+                    cout << "Gate.io connection opened" << endl;
                     json j;
                     j["time"] = time(0);
                     j["channel"] = "spot.obu";
@@ -43,9 +43,9 @@ void work() {
                     j["payload"] = {"ob.BTC_USDT.400"};
                     ws.send(j.dump());
                 } else if (msg->type == ix::WebSocketMessageType::Error) {
-                    cerr << "Error: " << msg->errorInfo.reason << endl;
+                    cerr << "Gate.io error: " << msg->errorInfo.reason << endl;
                 } else if (msg->type == ix::WebSocketMessageType::Close) {
-                    cout << "Connection closed" << endl;
+                    cout << "Gate.io connection closed" << endl;
                 }
             });
             ws.start();

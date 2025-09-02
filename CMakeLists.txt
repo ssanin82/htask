@@ -27,22 +27,32 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+FetchContent_Declare(
+    cpr
+    GIT_REPOSITORY https://github.com/libcpr/cpr.git
+    GIT_TAG        1.12.0
+)
+FetchContent_MakeAvailable(cpr)
+
 # add_executable(${PROJECT_NAME} src/MdBinance.cpp)
 # add_executable(${PROJECT_NAME} src/MdOkx.cpp)
 add_executable(${PROJECT_NAME}
     src/pricer.cpp
     src/md_gateio.cpp
     src/md_okx.cpp
+    src/md_binance.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${ixwebsocket_SOURCE_DIR}"
     "${simdjson_SOURCE_DIR}"
+    "${cpr_SOURCE_DIR}"
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
     htlib
     ixwebsocket
     nlohmann_json::nlohmann_json
+    cpr::cpr
 )
 
 add_library(htlib STATIC src/OrderBook.cpp)

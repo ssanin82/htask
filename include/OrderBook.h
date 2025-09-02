@@ -17,6 +17,7 @@ class OrderBook {
         std::pair<std::string, std::string> getBestBid();
 
         void print();
+        void clear();
 };
 
 }

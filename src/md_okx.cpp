@@ -2,8 +2,13 @@
 #include <string>
 
 #include <ixwebsocket/IXWebSocket.h>
+#include <nlohmann/json.hpp>
 
-using std::cout, std::endl, std::cerr, string;
+#include "OrderBook.h"
+
+using namespace htask::util;
+using nlohmann::json;
+using std::cout, std::endl, std::cerr, std::string;
 
 namespace htask {
 namespace md_okx {
@@ -14,7 +19,7 @@ const string SUBS_MSG = R"({
     "op": "subscribe",
     "args": [
         {
-            "channel": "books5",
+            "channel": "books",
             "instId": "BTC-USDT"
         }
     ]
@@ -22,27 +27,30 @@ const string SUBS_MSG = R"({
 
 void processMsg(OrderBook& ob, const string& msg) {
     json j = nlohmann::json::parse(msg);
-    for (const auto& lv: j["result"]["b"]) ob.updateLevel(true, lv[0], lv[1]);
-    for (const auto& lv: j["result"]["a"]) ob.updateLevel(false, lv[0], lv[1]);
+    for (auto& d: j["data"]) {
+        for (const auto& lv: d["bids"]) ob.updateLevel(true, lv[0], lv[1]);
+        for (const auto& lv: d["asks"]) ob.updateLevel(false, lv[0], lv[1]);
+    }
     ob.print();
 }
 
-int main() {
+void work() {
     while (true) {
         try {
+            OrderBook ob;
             ix::WebSocket ws;
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    cout << "Received message: " << msg->str << endl;
-                    // processMsg(ob, msg->str);
+                    // cout << "Received message: " << msg->str << endl;
+                    processMsg(ob, msg->str);
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
-                    cout << "Connection opened" << endl;
+                    cout << "OKX connection opened" << endl;
                     ws.send(SUBS_MSG);
                 } else if (msg->type == ix::WebSocketMessageType::Error) {
-                    cerr << "Error: " << msg->errorInfo.reason << endl;
+                    cerr << "OKX error: " << msg->errorInfo.reason << endl;
                 } else if (msg->type == ix::WebSocketMessageType::Close) {
-                    cout << "Connection closed" << endl;
+                    cout << "OKX connection closed" << endl;
                 }
             });
             ws.start();

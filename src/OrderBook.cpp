@@ -5,26 +5,50 @@
 
 #include "OrderBook.h"
 
-using std::cout, std::endl;
+using std::cout, std::endl, std::string;
 
 constexpr int PRINT_LV = 10;
 
 namespace htask {
 namespace util {
 
+string normalize(const string& s) {
+    string s1;
+    if(s.find('.') != string::npos) {
+        s1 = s.substr(0, s.find_last_not_of('0') + 1);
+        if(s1.find('.') == s1.size() - 1) s1 = s1.substr(0, s1.size()-1);
+    }
+    return s1;
+}
+
 void OrderBook::updateLevel(
-    bool isBid, const std::string& price, const std::string& size
+    bool isBid, const string& price, const string& size
 ) {
+    string key = normalize(price);
+    int updCount = 0;
+    int rmCount = 0;
     if (isBid) {
-        if (size == "0" && bids.contains(price)) bids.erase(price);
-        else bids[price] = size;
+        if (size == "0" && bids.contains(key)) {
+            bids.erase(key);
+            ++rmCount;
+        }
+        else {
+            bids[key] = size;
+            ++updCount;
+        }
     } else {
-        if (size == "0" && asks.contains(price)) asks.erase(price);
-        else asks[price] = size;
+        if (size == "0" && asks.contains(key)) {
+            asks.erase(key);
+            ++rmCount;
+        }
+        else {
+            asks[key] = size;
+            ++updCount;
+        }
     }
 }
 
-std::pair<std::string, std::string> OrderBook::getBestBid() {
+std::pair<string, string> OrderBook::getBestBid() {
     if (bids.empty()) return std::make_pair("", "");
     else return *bids.begin();
 }
@@ -57,6 +81,11 @@ void OrderBook::print() {
     cout << "ASK VOLUME: " << std::fixed << std::setprecision(2)
         << liquidity << "(" << (liquidity / 1'000'000) << " mln)" << endl;
     cout << endl;
+}
+
+void OrderBook::clear() {
+    bids.clear();
+    asks.clear();
 }
 
 }
