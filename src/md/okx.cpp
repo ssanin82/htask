@@ -35,7 +35,7 @@ void processMsg(OrderBook& ob, const string& msg) {
             ob.updateLevel(MktData::Okx, false, lv[0], lv[1]);
         }
     }
-    ob.print();
+    // ob.print();
 }
 
 void work(OrderBook& ob) {
@@ -45,7 +45,7 @@ void work(OrderBook& ob) {
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    // cout << "Received message: " << msg->str << endl;
+                    // cout << "OKX received message: " << msg->str << endl;
                     processMsg(ob, msg->str);
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
                     cout << "OKX connection opened" << endl;

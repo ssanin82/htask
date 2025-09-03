@@ -35,7 +35,7 @@ void work(OrderBook& ob) {
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    // cout << "Received message: " << msg->str << endl;
+                    // cout << "Gate.io received message: " << msg->str << endl;
                     processMsg(ob, msg->str);
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
                     cout << "Gate.io connection opened" << endl;

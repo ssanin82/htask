@@ -19,4 +19,5 @@ TEST_CASE("str_to_scaled_num", "[util]") {
     REQUIRE(htask::util::str_to_scaled_num("123.04", 3) == 123040);
     REQUIRE(htask::util::str_to_scaled_num("123.4", 3) == 123400);
     REQUIRE(htask::util::str_to_scaled_num("123", 3) == 123000);
+    REQUIRE(htask::util::str_to_scaled_num("111209.90000000", 2) == 11120990);
 }

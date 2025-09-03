@@ -17,11 +17,15 @@ enum class MktData {
 };
 
 class OrderBook {
-        std::map<PRICE_T, std::unordered_map<MktData, SIZE_T>, std::greater<int>> bids;
+        std::map<PRICE_T, std::unordered_map<MktData, SIZE_T>, std::greater<PRICE_T>> bids;
         std::map<PRICE_T, std::unordered_map<MktData, SIZE_T>> asks;
+        std::unordered_map<MktData, std::map<PRICE_T, SIZE_T, std::greater<PRICE_T>>> xchBids;
+        std::unordered_map<MktData, std::map<PRICE_T, SIZE_T>> xchAsks;
 
         std::pair<PRICE_T, SIZE_T> getBest(bool isBid);
         SIZE_T getSize(bool isBid, PRICE_T price);
+
+        void printXchBook(MktData md);
 
         std::recursive_mutex lock;
     public:
@@ -40,6 +44,7 @@ class OrderBook {
         PRICE_T getMidPrice();
 
         void print();
+        void printExtended();
         void clear();
 };
 

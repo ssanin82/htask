@@ -21,15 +21,31 @@ void OrderBook::updateLevel(
     PRICE_T key = str_to_scaled_num(price, PRICE_SCALE);
     SIZE_T sz = str_to_scaled_num(size, SIZE_SCALE);
     if (isBid) {
-        if (!sz && bids.contains(key)) {
-            bids[key].erase(md);
-            if (bids[key].empty()) bids.erase(key);
-        } else bids[key][md] = sz;
+        if (!sz) {
+            if (bids.contains(key)) {
+                bids.at(key).erase(md);
+                if (bids.at(key).empty()) bids.erase(key);
+            }
+            if (xchBids.contains(md) && xchBids[md].contains(key)) {
+                xchBids[md].erase(key);
+            }
+        } else {
+            bids[key][md] = sz;
+            xchBids[md][key] = sz;
+        }
     } else {
-        if (!sz && asks.contains(key)) {
-            asks[key].erase(md);
-            if (asks[key].empty()) asks.erase(key);
-        } else asks[key][md] = sz;
+        if (!sz) {
+            if (asks.contains(key)) {
+                asks.at(key).erase(md);
+                if (asks.at(key).empty()) asks.erase(key);
+            }
+            if (xchAsks.contains(md) && xchAsks[md].contains(key)) {
+                xchBids[md].erase(key);
+            }
+        } else  {
+            asks[key][md] = sz;
+            xchAsks[md][key] = sz;
+        }
     }
 }
 
@@ -114,6 +130,7 @@ double OrderBook::getVolumePriceMln(bool isBid, int x) {
 
 void OrderBook::print() {
     std::lock_guard<std::recursive_mutex> lg(lock);
+    auto bbidIt = bids.begin();
     cout << "BIDS (size=" << bids.size() << "):" << endl;
     auto it = bids.begin();
     int count = PRINT_LV;
@@ -170,11 +187,110 @@ void OrderBook::print() {
         --count;
     }
     liquidity = NO_SIZE;
-    for (auto& [k, v]: asks) liquidity += k * getSize(true, k);
+    for (auto& [k, v]: asks) liquidity += k * getSize(false, k);
     cout << "ASK VOLUME: " << std::fixed << std::setprecision(2)
         << scale_down(liquidity, PRICE_SCALE + SIZE_SCALE) / 1'000'000
         << " mln)" << endl;
     cout << endl;
+}
+
+void OrderBook::printXchBook(MktData md) {
+    if (!xchBids.contains(md) || !xchAsks.contains(md)) {
+        cout << "no data available" << endl;
+        return;
+    }
+    auto itX = xchBids[md].begin();
+    int lv = 0;
+    while (itX != xchBids[md].end() && lv < PRINT_LV) {
+        ++lv;
+        PRICE_T price = itX->first;
+        SIZE_T sz = itX->second;;
+        cout << "bid " << std::setw(3) << std::setfill('0') << lv
+            << std::fixed << std::setprecision(PRICE_SCALE)
+            << " price: " << scale_down(price, PRICE_SCALE)
+            << std::setprecision(SIZE_SCALE)
+            << ", size: " << scale_down(sz, SIZE_SCALE) << endl; 
+        ++itX;
+    }
+    cout << "#" << endl;
+    itX = xchAsks[md].begin();
+    lv = 0;
+    while (itX != xchAsks[md].end() && lv < PRINT_LV) {
+        ++lv;
+        PRICE_T price = itX->first;
+        SIZE_T sz = itX->second;;
+        cout << "ask " << std::setw(3) << std::setfill('0') << lv
+            << std::fixed << std::setprecision(PRICE_SCALE)
+            << " price: " << scale_down(price, PRICE_SCALE)
+            << std::setprecision(SIZE_SCALE)
+            << ", size: " << scale_down(sz, SIZE_SCALE) << endl; 
+        ++itX;
+    }
+    cout << endl;
+}
+
+void OrderBook::printExtended() {
+    std::lock_guard<std::recursive_mutex> lg(lock);
+    cout << "BIDS" << endl;
+    auto it = bids.begin();
+    int lv = 0;
+    while (it != bids.end() && lv < PRINT_LV) {
+        ++lv;
+        PRICE_T price = it->first;
+        SIZE_T sz = getSize(true, price);
+        SIZE_T binanceSz = it->second.contains(MktData::Binance) ?
+            it->second[MktData::Binance] : 0;
+        SIZE_T okxSz = it->second.contains(MktData::Okx) ?
+            it->second[MktData::Okx] : 0;
+        SIZE_T gateioSz = it->second.contains(MktData::GateIo) ?
+            it->second[MktData::GateIo] : 0;
+        cout << std::setw(3) << std::setfill('0') << lv
+            << std::fixed << std::setprecision(PRICE_SCALE)
+            << " price: " << scale_down(price, PRICE_SCALE)
+            << std::setprecision(SIZE_SCALE)
+            << ", size: " << scale_down(sz, SIZE_SCALE)
+            << " -- "
+            << "binance: " << scale_down(binanceSz, SIZE_SCALE)
+            << ", okx: " << scale_down(okxSz, SIZE_SCALE)
+            << ", gateio: " << scale_down(gateioSz, SIZE_SCALE) << endl; 
+        ++it;
+    }
+    cout << "#" << endl;
+
+    cout << "ASKS" << endl;
+    it = asks.begin();
+    lv = 0;
+    while (it != asks.end() && lv < PRINT_LV) {
+        ++lv;
+        PRICE_T price = it->first;
+        SIZE_T sz = getSize(false, price);
+        SIZE_T binanceSz = it->second.contains(MktData::Binance) ?
+            it->second[MktData::Binance] : 0;
+        SIZE_T okxSz = it->second.contains(MktData::Okx) ?
+            it->second[MktData::Okx] : 0;
+        SIZE_T gateioSz = it->second.contains(MktData::GateIo) ?
+            it->second[MktData::GateIo] : 0;
+        cout << std::setw(3) << std::setfill('0') << lv
+            << std::fixed << std::setprecision(PRICE_SCALE)
+            << " price: " << scale_down(price, PRICE_SCALE)
+            << std::setprecision(SIZE_SCALE)
+            << ", size: " << scale_down(sz, SIZE_SCALE)
+            << " -- "
+            << "binance: " << scale_down(binanceSz, SIZE_SCALE)
+            << ", okx: " << scale_down(okxSz, SIZE_SCALE)
+            << ", gateio: " << scale_down(gateioSz, SIZE_SCALE) << endl; 
+        ++it;
+    }
+
+    cout << endl;
+    cout << "PER EXCHANGE:" << endl << endl;
+
+    cout << "BINANCE" << endl;
+    printXchBook(MktData::Binance);
+    cout << "OKX" << endl;
+    printXchBook(MktData::Okx);
+    cout << "GATEIO" << endl;
+    printXchBook(MktData::GateIo);
 }
 
 void OrderBook::clear() {

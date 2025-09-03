@@ -44,7 +44,7 @@ void processMsg(OrderBook& ob, const json& j) {
     for (const auto& lv: j["a"]) {
         ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
     }
-    ob.print();
+    // ob.print();
 }
 
 void _work(OrderBook& ob) {
@@ -55,7 +55,7 @@ void _work(OrderBook& ob) {
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    // cout << "Received message: " << msg->str << endl;
+                    // cout << "Binance received message: " << msg->str << endl;
                     json j = nlohmann::json::parse(msg->str);
                     if (!init_lu) {
                         initBuffer.push(std::move(j));

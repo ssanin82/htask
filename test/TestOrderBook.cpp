@@ -9,15 +9,15 @@
 using std::cout, std::endl;
 using namespace htask::util;
 
-class ObFixture {
+class ObTestFixture {
 public:
-    ObFixture() { /* Setup code */ }
-    ~ObFixture() { /* Teardown code */ }
+    ObTestFixture() { /* Setup code */ }
+    ~ObTestFixture() { /* Teardown code */ }
 
     OrderBook ob;
 };
 
-TEST_CASE_METHOD(ObFixture, "Order book bbid", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Order book bbid", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Okx, true, "123.45", "11");
     auto bbid = ob.getBestBid();
@@ -25,7 +25,7 @@ TEST_CASE_METHOD(ObFixture, "Order book bbid", "[fixture]") {
     REQUIRE(eq(21, scale_down(bbid.second, SIZE_SCALE)));
 }
 
-TEST_CASE_METHOD(ObFixture, "Order book bbid replace", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Order book bbid replace", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Okx, true, "123.45", "11");
     ob.updateLevel(MktData::Okx, true, "123.45", "12");
@@ -34,7 +34,7 @@ TEST_CASE_METHOD(ObFixture, "Order book bbid replace", "[fixture]") {
     REQUIRE(eq(22, scale_down(bbid.second, SIZE_SCALE)));
 }
 
-TEST_CASE_METHOD(ObFixture, "Order book bbid delete", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Order book bbid delete", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Okx, true, "123.45", "11");
     ob.updateLevel(MktData::Okx, true, "123.45", "0");
@@ -43,7 +43,7 @@ TEST_CASE_METHOD(ObFixture, "Order book bbid delete", "[fixture]") {
     REQUIRE(eq(10, scale_down(bbid.second, SIZE_SCALE)));
 }
 
-TEST_CASE_METHOD(ObFixture, "Order book bask delete all", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Order book bask delete all", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Binance, true, "123.45", "0");
     auto bbid = ob.getBestBid();
@@ -51,7 +51,7 @@ TEST_CASE_METHOD(ObFixture, "Order book bask delete all", "[fixture]") {
     REQUIRE(!bbid.second);
 }
 
-TEST_CASE_METHOD(ObFixture, "Volume pricer", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Volume pricer", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "1", "10");
     ob.updateLevel(MktData::Binance, true, "2", "8");
     ob.updateLevel(MktData::Binance, true, "3", "6");
@@ -77,7 +77,7 @@ TEST_CASE_METHOD(ObFixture, "Volume pricer", "[fixture]") {
     ));
 }
 
-TEST_CASE_METHOD(ObFixture, "Mid price", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Mid price", "[fixture]") {
     ob.updateLevel(MktData::GateIo, false, "3.4", "10");
     ob.updateLevel(MktData::Okx, false, "3.3", "10");
     ob.updateLevel(MktData::GateIo, false, "3.2", "10");

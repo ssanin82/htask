@@ -10,7 +10,7 @@
 - nlohmann/json was chosen over simdjson for simplicity (production code would be different)
 - the pricer is not ultra-fast as the market data streams are with 100ms frequency. Thus, synchronizing with a mutex should be sufficient for the task
 - floating point arithmetic is replaced with integer arithmetic wherever possible to avoid imprecision, some inaccuracy should is ok since sizes and prices change by fixed increments (lot/tick sizes), so some resulting prices or sizes must be truncated to tick or lot size
-- OrderBook::print has knowledge about the exchanges, which makes the code a bit less extensible, but print is a utility function, it does not umpact the main functionality
+- OrderBook::print/printExtended have knowledge about the exchanges, which makes the code a bit less extensible, but print is a utility function, it does not umpact the main functionality
 - to get a bigger order book with Binance some synchronization is performed with snapdhot and buffered updates, thus Binance market data has some headstart. The synchronization is based on sleep, in production it should be event-based (spin-wait or conditional variable)
 
 

@@ -53,13 +53,14 @@ inline double scale_down(long long x, int y) {
 inline int str_to_scaled_num(const string& s, int scale) {
     int x = 0;
     int y = 0;
-    size_t dpos = s.find('.');
+    string _s = normalizeNum(s);
+    size_t dpos = _s.find('.');
     if(dpos != string::npos) {
-        x = std::stoi(s.substr(0, dpos));
-        string srem = s.substr(dpos + 1);
+        x = std::stoi(_s.substr(0, dpos));
+        string srem = _s.substr(dpos + 1);
         if (srem.length() < scale) srem += string(scale - srem.length(), '0');
         y = std::stoi(srem);
-    } else x = std::stoi(s);
+    } else x = std::stoi(_s);
     int res = scale_up(x, scale);
     res += y;
     return res;
