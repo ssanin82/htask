@@ -7,56 +7,82 @@
 #include "util.h"
 
 using std::cout, std::endl;
+using namespace htask::util;
 
 class ObFixture {
 public:
     ObFixture() { /* Setup code */ }
     ~ObFixture() { /* Teardown code */ }
 
-    htask::util::OrderBook ob;
+    OrderBook ob;
 };
 
 TEST_CASE_METHOD(ObFixture, "Order book bbid", "[fixture]") {
-    ob.updateLevel(htask::util::MktData::Binance, true, "123.456", "10");
-    ob.updateLevel(htask::util::MktData::Okx, true, "123.456", "11");
+    ob.updateLevel(MktData::Binance, true, "123.45", "10");
+    ob.updateLevel(MktData::Okx, true, "123.45", "11");
     auto bbid = ob.getBestBid();
-    REQUIRE("123.456" == bbid.first);
-    REQUIRE("21" == bbid.second);
+    REQUIRE(eq(123.45, scale_down(bbid.first, PRICE_SCALE)));
+    REQUIRE(eq(21, scale_down(bbid.second, SIZE_SCALE)));
 }
 
 TEST_CASE_METHOD(ObFixture, "Order book bbid replace", "[fixture]") {
-    ob.updateLevel(htask::util::MktData::Binance, true, "123.456", "10");
-    ob.updateLevel(htask::util::MktData::Okx, true, "123.456", "11");
-    ob.updateLevel(htask::util::MktData::Okx, true, "123.456", "12");
+    ob.updateLevel(MktData::Binance, true, "123.45", "10");
+    ob.updateLevel(MktData::Okx, true, "123.45", "11");
+    ob.updateLevel(MktData::Okx, true, "123.45", "12");
     auto bbid = ob.getBestBid();
-    REQUIRE("123.456" == bbid.first);
-    REQUIRE("22" == bbid.second);
+    REQUIRE(eq(123.45, scale_down(bbid.first, PRICE_SCALE)));
+    REQUIRE(eq(22, scale_down(bbid.second, SIZE_SCALE)));
 }
 
 TEST_CASE_METHOD(ObFixture, "Order book bbid delete", "[fixture]") {
-    ob.updateLevel(htask::util::MktData::Binance, true, "123.456", "10");
-    ob.updateLevel(htask::util::MktData::Okx, true, "123.456", "11");
-    ob.updateLevel(htask::util::MktData::Okx, true, "123.456", "0");
+    ob.updateLevel(MktData::Binance, true, "123.45", "10");
+    ob.updateLevel(MktData::Okx, true, "123.45", "11");
+    ob.updateLevel(MktData::Okx, true, "123.45", "0");
     auto bbid = ob.getBestBid();
-    REQUIRE("123.456" == bbid.first);
-    REQUIRE("10" == bbid.second);
+    REQUIRE(eq(123.45, scale_down(bbid.first, PRICE_SCALE)));
+    REQUIRE(eq(10, scale_down(bbid.second, SIZE_SCALE)));
 }
 
 TEST_CASE_METHOD(ObFixture, "Order book bask delete all", "[fixture]") {
-    ob.updateLevel(htask::util::MktData::Binance, true, "123.456", "10");
-    ob.updateLevel(htask::util::MktData::Binance, true, "123.456", "0");
+    ob.updateLevel(MktData::Binance, true, "123.45", "10");
+    ob.updateLevel(MktData::Binance, true, "123.45", "0");
     auto bbid = ob.getBestBid();
-    REQUIRE("" == bbid.first);
-    REQUIRE("" == bbid.second);
+    REQUIRE(!bbid.first);
+    REQUIRE(!bbid.second);
 }
 
-TEST_CASE_METHOD(ObFixture, "Volume pricer1", "[fixture]") {
-    ob.updateLevel(htask::util::MktData::Binance, true, "1", "10");
-    ob.updateLevel(htask::util::MktData::Binance, true, "2", "8");
-    ob.updateLevel(htask::util::MktData::Binance, true, "3", "6");
-    REQUIRE(htask::util::eq(3., ob.getVolumePrice(true, 10.)));
-    REQUIRE(htask::util::eq(3., ob.getVolumePrice(true, 18.)));
-    REQUIRE(htask::util::eq(20. / 7, ob.getVolumePrice(true, 20.)));
-    REQUIRE(htask::util::eq(1.833333333, ob.getVolumePrice(true, 44.)));
-    REQUIRE(htask::util::eq(-1., ob.getVolumePrice(true, 45.)));
+TEST_CASE_METHOD(ObFixture, "Volume pricer", "[fixture]") {
+    ob.updateLevel(MktData::Binance, true, "1", "10");
+    ob.updateLevel(MktData::Binance, true, "2", "8");
+    ob.updateLevel(MktData::Binance, true, "3", "6");
+    REQUIRE(eq(
+        3.,
+        scale_down(ob.getVolumePrice(true, 10),PRICE_SCALE)
+    ));
+    REQUIRE(eq(
+        3.,
+        scale_down(ob.getVolumePrice(true, 18),PRICE_SCALE)
+    ));
+    REQUIRE(eq(
+        2.85,
+        scale_down(ob.getVolumePrice(true, 20),PRICE_SCALE)
+    ));
+    REQUIRE(eq(
+        1.83,
+        scale_down(ob.getVolumePrice(true, 44),PRICE_SCALE)
+    ));
+    REQUIRE(eq(
+        0.,
+        scale_down(ob.getVolumePrice(true, 45),PRICE_SCALE)
+    ));
+}
+
+TEST_CASE_METHOD(ObFixture, "Mid price", "[fixture]") {
+    ob.updateLevel(MktData::GateIo, false, "3.4", "10");
+    ob.updateLevel(MktData::Okx, false, "3.3", "10");
+    ob.updateLevel(MktData::GateIo, false, "3.2", "10");
+    ob.updateLevel(MktData::Binance, true, "3", "10");
+    ob.updateLevel(MktData::Okx, true, "2.9", "10");
+    ob.updateLevel(MktData::Binance, true, "2.8", "10");
+    REQUIRE(eq(3.1, scale_down(ob.getMidPrice(), PRICE_SCALE)));
 }

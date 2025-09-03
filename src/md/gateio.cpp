@@ -25,18 +25,17 @@ void processMsg(OrderBook& ob, const string& msg) {
     for (const auto& lv: j["result"]["a"]) {
         ob.updateLevel(MktData::GateIo, false, lv[0], lv[1]);
     }
-    ob.print();
+    // ob.print();
 }
 
-void work() {
+void work(OrderBook& ob) {
     while (true) {
         try {
-            OrderBook ob;
             ix::WebSocket ws;
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    cout << "Received message: " << msg->str << endl;
+                    // cout << "Received message: " << msg->str << endl;
                     processMsg(ob, msg->str);
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
                     cout << "Gate.io connection opened" << endl;

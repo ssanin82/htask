@@ -3,6 +3,9 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <mutex>
+
+#include "util.h"
 
 namespace htask {
 namespace util {
@@ -14,11 +17,13 @@ enum class MktData {
 };
 
 class OrderBook {
-        std::map<std::string, std::unordered_map<MktData, std::string>, std::greater<std::string>> bids;
-        std::map<std::string, std::unordered_map<MktData, std::string>> asks;
+        std::map<PRICE_T, std::unordered_map<MktData, SIZE_T>, std::greater<int>> bids;
+        std::map<PRICE_T, std::unordered_map<MktData, SIZE_T>> asks;
 
-        std::pair<std::string, std::string> getBest(bool isBid);
-        std::string getSize(bool isBid, const std::string& price);
+        std::pair<PRICE_T, SIZE_T> getBest(bool isBid);
+        SIZE_T getSize(bool isBid, PRICE_T price);
+
+        std::recursive_mutex lock;
     public:
         void updateLevel(
             MktData md,
@@ -27,11 +32,12 @@ class OrderBook {
             const std::string& size
         );
 
-        std::pair<std::string, std::string> getBestBid();
-        std::pair<std::string, std::string> getBestAsk();
+        std::pair<PRICE_T, SIZE_T> getBestBid();
+        std::pair<PRICE_T, SIZE_T> getBestAsk();
 
-        double getVolumePrice(bool isBid, double target);
+        PRICE_T getVolumePrice(bool isBid, SIZE_T target_usdt);
         double getVolumePriceMln(bool isBid, int x);
+        PRICE_T getMidPrice();
 
         void print();
         void clear();

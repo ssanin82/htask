@@ -19,9 +19,8 @@ namespace md_binance {
 const std::string URL = "wss://stream.binance.com:9443/ws/btcusdt@depth@100ms";
 const std::string OB_REQ = "https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=5000";
 uint64_t init_lu = 0UL;
-OrderBook ob;
 
-uint64_t getInitOb() {
+uint64_t getInitOb(OrderBook& ob) {
     cpr::Response r = cpr::Get(cpr::Url{OB_REQ});
     try {
         json j = nlohmann::json::parse(r.text);
@@ -31,7 +30,6 @@ uint64_t getInitOb() {
         for (const auto& lv: j["asks"]) {
             ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
         }
-        cout << "INIT " << j["lastUpdateId"] << endl;
         return j["lastUpdateId"];
     } catch (...) {
         cerr << "Binance - ERROR parsing: " << r.text << endl;
@@ -39,7 +37,7 @@ uint64_t getInitOb() {
     }
 }
 
-void processMsg(const json& j) {
+void processMsg(OrderBook& ob, const json& j) {
     for (const auto& lv: j["b"]) {
         ob.updateLevel(MktData::Binance, true, lv[0], lv[1]);
     }
@@ -49,7 +47,7 @@ void processMsg(const json& j) {
     ob.print();
 }
 
-void _work() {
+void _work(OrderBook& ob) {
     while (true) {
         try {
             std::queue<json> initBuffer;
@@ -57,7 +55,7 @@ void _work() {
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
                 if (msg->type == ix::WebSocketMessageType::Message) {
-                    cout << "Received message: " << msg->str << endl;
+                    // cout << "Received message: " << msg->str << endl;
                     json j = nlohmann::json::parse(msg->str);
                     if (!init_lu) {
                         initBuffer.push(std::move(j));
@@ -66,10 +64,10 @@ void _work() {
                             while (!initBuffer.empty()) {
                                 auto jj = initBuffer.front();
                                 initBuffer.pop();
-                                if (jj["u"] > init_lu) processMsg(jj);
+                                if (jj["u"] > init_lu) processMsg(ob, jj);
                             }
                         }
-                        processMsg(j);
+                        processMsg(ob, j);
                     }
                 } else if (msg->type == ix::WebSocketMessageType::Open) {
                     cout << "Binance connection opened" << endl;
@@ -93,8 +91,8 @@ void _work() {
     // ws.stop();
 }
 
-void work() {
-    std::jthread t(_work);
+void work(OrderBook& ob) {
+    std::jthread t(_work, std::ref(ob));
     // let market data start coming
     std::this_thread::sleep_for(std::chrono::seconds(1));
     while (true) {
@@ -102,7 +100,7 @@ void work() {
         if (!init_lu) {
             ob.clear();
             cout << "Binance: requesting initial ob snapshot" << endl;
-            init_lu = getInitOb();
+            init_lu = getInitOb(ob);
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

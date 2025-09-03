@@ -34,13 +34,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpr)
 
-# add_executable(${PROJECT_NAME} src/MdBinance.cpp)
-# add_executable(${PROJECT_NAME} src/MdOkx.cpp)
 add_executable(${PROJECT_NAME}
     src/pricer.cpp
-    src/md_gateio.cpp
-    src/md_okx.cpp
-    src/md_binance.cpp
+    src/md/gateio.cpp
+    src/md/okx.cpp
+    src/md/binance.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"

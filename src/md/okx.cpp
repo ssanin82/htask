@@ -38,10 +38,9 @@ void processMsg(OrderBook& ob, const string& msg) {
     ob.print();
 }
 
-void work() {
+void work(OrderBook& ob) {
     while (true) {
         try {
-            OrderBook ob;
             ix::WebSocket ws;
             ws.setUrl(URL);
             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
