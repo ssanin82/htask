@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package pubsub;
+
+service PubSubService {
+    rpc Subscribe(SubscriptionRequest) returns (stream Message);
+    rpc Publish(PublishRequest) returns (PublishReply);
+}
+
+message SubscriptionRequest {
+  string topic = 1;
+}
+
+message PublishRequest {
+  string topic = 1;
+  oneof payload {
+    BbaData bba = 2;
+    VolBandsData vbd = 3;
+    PriceBandsData pbd = 4;
+  }
+}
+
+message PublishReply {
+  bool success = 1;
+}
+
+message Message {
+  string topic = 1;
+  oneof payload {
+    BbaData bba = 2;
+    VolBandsData vbd = 3;
+    PriceBandsData pbd = 4;
+  }
+}
+
+message BbaData {
+  uint32 best_bid_price = 1;
+  uint32 best_ask_price = 2;
+  uint64 best_bid_size = 3;
+  uint64 best_ask_size = 4;
+}
+
+message VolBandsData {
+  map<uint32, uint32> mln_buy_price = 1;
+  map<uint32, uint32> mln_sell_price = 2;
+}
+
+message PriceBandsData {
+  uint32 bbo = 1;
+  map<uint32, uint32> bbo_up_bps = 2;
+  map<uint32, uint32> bbo_down_bps = 3;
+}

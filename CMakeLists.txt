@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5...3.28)
-project(pricer CXX)
+project(htask CXX)
 
  set(CMAKE_CXX_STANDARD 23)
  set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,19 +43,74 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpr)
 
-add_executable(${PROJECT_NAME}
+find_package(absl REQUIRED)
+find_package(Protobuf REQUIRED)
+find_package(gRPC CONFIG)
+get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
+
+# TARGETS
+
+set(PROTO_FILE proto/pubsub.proto)
+get_target_property(Protobuf_INCLUDE_DIRS protobuf::libprotobuf
+   INTERFACE_INCLUDE_DIRECTORIES
+)
+
+add_library(pubsub_proto)
+
+protobuf_generate(
+    LANGUAGE cpp
+    TARGET pubsub_proto
+    PROTOS ${PROTO_FILE}
+)
+protobuf_generate(
+    TARGET pubsub_proto
+    LANGUAGE grpc
+    PROTOS ${PROTO_FILE}
+    GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+    PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}"
+)
+
+set(MORE_INCLUDES
+    ${gRPC_INSTALL_DIR}/third_party/protobuf/src
+    ${gRPC_INSTALL_DIR}/third_party/abseil-cpp
+    ${gRPC_INSTALL_DIR}/include
+)
+set(DEP_LIBS
+    pubsub_proto
+    gRPC::grpc++
+    protobuf::libprotobuf
+    absl::base
+    absl::strings
+    absl::time
+    absl::status
+)
+
+target_sources(pubsub_proto PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/proto/pubsub.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/proto/pubsub.grpc.pb.cc
+)
+set(gRPC_INSTALL_DIR /root/dev/grpc)
+target_include_directories(pubsub_proto PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${MORE_INCLUDES}
+)
+
+add_executable(pricer
     src/pricer.cpp
     src/md/gateio.cpp
     src/md/okx.cpp
     src/md/binance.cpp
 )
-target_include_directories(${PROJECT_NAME} PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${ixwebsocket_SOURCE_DIR}"
-    "${cpr_SOURCE_DIR}"
+target_include_directories(pricer PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${ixwebsocket_SOURCE_DIR}
+    ${cpr_SOURCE_DIR}
+    ${MORE_INCLUDES}
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(pricer PRIVATE
     htlib
+    ${DEP_LIBS}
     ixwebsocket
     nlohmann_json::nlohmann_json
     cpr::cpr
@@ -66,7 +121,23 @@ target_include_directories(htlib PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-add_dependencies(${PROJECT_NAME} htlib)
+add_dependencies(pricer htlib)
+
+add_executable(server src/server.cpp)
+target_link_libraries(server pubsub_proto ${DEP_LIBS})
+target_include_directories(server PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${MORE_INCLUDES}
+)
+
+add_executable(consumer src/consumer.cpp)
+target_link_libraries(consumer pubsub_proto ${DEP_LIBS})
+target_include_directories(consumer PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${MORE_INCLUDES}
+)
+
+# -----------------
 
 enable_testing()
 add_subdirectory(test)

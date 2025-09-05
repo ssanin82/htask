@@ -13,6 +13,8 @@
 - OrderBook::print/printExtended have knowledge about the exchanges, which makes the code a bit less extensible, but print is a utility function, it does not umpact the main functionality
 - to get a bigger order book with Binance some synchronization is performed with snapdhot and buffered updates, thus Binance market data has some headstart. The synchronization is based on sleep, in production it should be event-based (spin-wait or conditional variable)
 
+# TODO justify integer arithmetic
+
 
 ## Binance Reference Data
 - https://api.binance.com/api/v3/exchangeInfo
@@ -28,3 +30,15 @@
 - https://api.gateio.ws/api/v4/spot/currency_pairs/BTC_USDT
 - BTC-USDT lot size as of today: 0.000001 (amount precision == 6)
 - BTC-USDT tick size as of today: 0.1 (precision == 1)
+
+
+## gRPC server - to improve
+- ?? Proper cleanup of subscriber connections when they disconnect.
+- ?? Handling backpressure if many messages are published quickly.
+- ?? Possibly an async server for scalability.
+
+
+## ToDo - external configuretion
+- gRPC server port, address
+- In production there should be a service discovery mode, or some conteiner orchestration like Kubernetes used. For the task purpose and simplicuty, the publishing topics are hardcoded in the components.
+- The pricer publishes at fixed time intervals. Ideally, it should be real-time, but Binance/OKX/Gate.io do not give real-time market data, except ticker (best bid/ask). Some tun-time approximation can be made based on real-time ticker combined with order book updates, but whether it is acceptable to use - that is the path to be taken in consideration with the quant/the person creating the model for the strategy.
