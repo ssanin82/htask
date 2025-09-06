@@ -1,0 +1,48 @@
+version: "3.9"
+services:
+    pricer:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        command: ["/work/htask/build/pricer", "--host", "server"]
+
+    server:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+          - "50051:50051"
+        command: /work/htask/build/server
+        healthcheck:
+            test: ["CMD-SHELL", "netstat -nat | grep 50051 | grep -q LISTEN"]
+            interval: 2s
+            timeout: 2s
+            retries: 5
+            start_period: 2s
+
+    get_bba:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        command: ["/work/htask/build/consumer", "--host", "server"]
+        depends_on:
+            server:
+                condition: service_healthy
+
+    get_vbd:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        command: ["/work/htask/build/consumer", "--host", "server", "--topic", "vbd"]
+        depends_on:
+            server:
+                condition: service_healthy
+
+    get_pbd:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        command: ["/work/htask/build/consumer", "--host", "server", "--topic", "pbd"]
+        depends_on:
+            server:
+                condition: service_healthy
