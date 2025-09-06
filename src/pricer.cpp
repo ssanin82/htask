@@ -14,7 +14,7 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 using pubsub::PubSubService;
-using pubsub::PublishRequest;
+using pubsub::Message;
 using pubsub::PublishReply;
 using pubsub::BbaData;
 using pubsub::VolBandsData;
@@ -31,14 +31,14 @@ public:
     Publisher(std::shared_ptr<Channel> channel):
         stub(PubSubService::NewStub(channel)) {}
 
-    void Publish(const PublishRequest& req) {
+    void Publish(const Message& msg) {
         PublishReply reply;
         ClientContext ctx;
-        Status status = stub->Publish(&ctx, req, &reply);
+        Status status = stub->Publish(&ctx, msg, &reply);
         if (status.ok() && reply.success()) {
-            std::cout << "[Publisher] Sent:" << std::endl
-                << req.DebugString() << std::endl;
-        } else std::cerr << "Publish failed." << std::endl;
+            // std::cout << "[Publisher] Sent:" << std::endl
+            //     << req.DebugString() << std::endl;
+        }// else std::cerr << "Publish failed." << std::endl;
     }
 };
 
@@ -56,11 +56,11 @@ void publish(OrderBook& ob, Publisher& pub) {
     bba.set_best_bid_size(bbid.second);
     bba.set_best_ask_price(bask.first);
     bba.set_best_ask_size(bask.second);
-    PublishRequest requestBba;
-    requestBba.set_topic("bba");
-    requestBba.set_publish_ts_ms(ts_ms);
-    *requestBba.mutable_bba() = bba;
-    pub.Publish(requestBba);
+    Message msgBba;
+    msgBba.set_topic("bba");
+    msgBba.set_publish_ts_ms(ts_ms);
+    *msgBba.mutable_bba() = bba;
+    pub.Publish(msgBba);
 
     VolBandsData vbd;
     vbd.mutable_mln_buy_price()->insert({1, ob.getVolumePriceMln(false, 1)});
@@ -73,15 +73,15 @@ void publish(OrderBook& ob, Publisher& pub) {
     vbd.mutable_mln_sell_price()->insert({25, ob.getVolumePriceMln(true, 25)});
     vbd.mutable_mln_buy_price()->insert({50, ob.getVolumePriceMln(false, 50)});
     vbd.mutable_mln_sell_price()->insert({50, ob.getVolumePriceMln(true, 50)});
-    PublishRequest requestVbd;
-    requestVbd.set_topic("vbd");
-    requestVbd.set_publish_ts_ms(ts_ms);
-    *requestVbd.mutable_vbd() = vbd;
-    pub.Publish(requestVbd);
+    Message msgVbd;
+    msgVbd.set_topic("vbd");
+    msgVbd.set_publish_ts_ms(ts_ms);
+    *msgVbd.mutable_vbd() = vbd;
+    pub.Publish(msgVbd);
 
     PriceBandsData pbd;
     PRICE_T mid = (bbid.first + bask.first) / 2;
-    pbd.set_bbo(mid);
+    pbd.set_mid(mid);
     pbd.mutable_bbo_up_bps()->insert({50, static_cast<int>(mid * (1.005))});
     pbd.mutable_bbo_down_bps()->insert({50, static_cast<int>(mid * (0.995))});
     pbd.mutable_bbo_up_bps()->insert({100, static_cast<int>(mid * (1.01))});
@@ -92,11 +92,11 @@ void publish(OrderBook& ob, Publisher& pub) {
     pbd.mutable_bbo_down_bps()->insert({500, static_cast<int>(mid * (0.95))});
     pbd.mutable_bbo_up_bps()->insert({1000, static_cast<int>(mid * (1.1))});
     pbd.mutable_bbo_down_bps()->insert({1000, static_cast<int>(mid * (0.9))});
-    PublishRequest requestPbd;
-    requestPbd.set_topic("pbd");
-    requestPbd.set_publish_ts_ms(ts_ms);
-    *requestPbd.mutable_pbd() = pbd;
-    pub.Publish(requestPbd);
+    Message msgPbd;
+    msgPbd.set_topic("pbd");
+    msgPbd.set_publish_ts_ms(ts_ms);
+    *msgPbd.mutable_pbd() = pbd;
+    pub.Publish(msgPbd);
 }
 
 int main() {

@@ -8,6 +8,7 @@
 
 using grpc::Channel;
 using grpc::ClientContext;
+using grpc::Status;
 using pubsub::PubSubService;
 using pubsub::SubscriptionRequest;
 using pubsub::Message;
@@ -69,20 +70,44 @@ public:
                     string buy_str = buy_price ?
                         ("USDT $" + scale_down_to_str(buy_price, PRICE_SCALE))
                         : "INSUFFICIENT LIQUIDITY";
-                    cout << "Notional of " << val
+                    cout << "Notional of USDT " << val
                         << " mln can be bought at: " << buy_str << endl;
 
                     uint32_t sell_price = msells[val];
                     string sell_str = sell_price ?
                         ("USDT $" + scale_down_to_str(sell_price, PRICE_SCALE))
                         : "INSUFFICIENT LIQUIDITY";
-                    cout << "Notional of " << val
+                    cout << "Notional of USDT " << val
                         << " mln can be sold at: " << sell_str << endl << endl;
                 }
                 cout << endl;
             } else { // pbd
-                // TODO
+                cout << "Mid price: "
+                    << scale_down_to_str(msg.pbd().mid(), PRICE_SCALE) << endl;
+                // move the received data to std::map to organize the
+                // keys into a sorted order
+                std::map<uint32_t, uint32_t> pups;
+                std::map<uint32_t, uint32_t> pdowns;
+                for (const auto& p: msg.pbd().bbo_up_bps()) {
+                    pups[p.first] = p.second;
+                }
+                for (const auto& p: msg.pbd().bbo_down_bps()) {
+                    pdowns[p.first] = p.second;
+                }
+                for (const auto& [bps, up_price]: pups) {
+                    cout << bps << " bps price range: "
+                        << scale_down_to_str(pdowns[bps], PRICE_SCALE)
+                        << " - " << scale_down_to_str(up_price, PRICE_SCALE)
+                        << endl;
+                }
+                cout << endl;
             }
+        }
+
+        Status status = reader->Finish();
+        if (!status.ok()) {
+            std::cerr << "Subscribe stream ended: "
+                << status.error_message() << std::endl;
         }
     }
 };

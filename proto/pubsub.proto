@@ -4,21 +4,11 @@ package pubsub;
 
 service PubSubService {
     rpc Subscribe(SubscriptionRequest) returns (stream Message);
-    rpc Publish(PublishRequest) returns (PublishReply);
+    rpc Publish(Message) returns (PublishReply);
 }
 
 message SubscriptionRequest {
   string topic = 1;
-}
-
-message PublishRequest {
-  string topic = 1;
-  uint64 publish_ts_ms = 2;
-  oneof payload {
-    BbaData bba = 3;
-    VolBandsData vbd = 4;
-    PriceBandsData pbd = 5;
-  }
 }
 
 message PublishReply {
@@ -48,7 +38,7 @@ message VolBandsData {
 }
 
 message PriceBandsData {
-  uint32 bbo = 1;
+  uint32 mid = 1;
   map<uint32, uint32> bbo_up_bps = 2;
   map<uint32, uint32> bbo_down_bps = 3;
 }

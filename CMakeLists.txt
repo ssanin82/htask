@@ -96,6 +96,7 @@ add_dependencies(pricer htlib)
 add_executable(server src/server.cpp)
 target_link_libraries(server pubsub_proto ${DEP_LIBS})
 target_include_directories(server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}
     ${MORE_INCLUDES}
 )

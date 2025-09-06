@@ -1,86 +1,161 @@
-#include <iostream>
-#include <mutex>
-#include <map>
-#include <vector>
-#include <thread>
+#include "server.h"
 
-#include <grpcpp/grpcpp.h>
-#include "proto/pubsub.grpc.pb.h"
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-using grpc::ServerWriter;
-using pubsub::PubSubService;
-using pubsub::SubscriptionRequest;
-using pubsub::PublishRequest;
-using pubsub::PublishReply;
-using pubsub::Message;
 using std::cout, std::endl;
 
-class PubSubServiceImpl final : public PubSubService::Service {
-private:
-    std::mutex subsLock;
-    std::map<std::string, std::vector<ServerWriter<Message>*>> subscribers;
+namespace htask {
+namespace server {
 
-public:
-    Status Subscribe(
-        ServerContext* ctx,
-        const SubscriptionRequest* req,
-        ServerWriter<Message>* writer
-    ) override {
-        std::string topic = req->topic();
-        {
-            cout << "Subscribe request, topic: " << req->topic() << endl;
-            std::lock_guard<std::mutex> lock(subsLock);
-            subscribers[topic].push_back(writer);
+// SubscriberRegistry ---------------------------------------------------
+
+void SubscriberRegistry::Add(
+    const std::string& topic, SubscriberSession* session
+) {
+    std::lock_guard<std::mutex> lock(mLock);
+    mSubs[topic].insert(session);
+}
+
+void SubscriberRegistry::Remove(
+    const std::string& topic, SubscriberSession* session
+) {
+    std::lock_guard<std::mutex> lock(mLock);
+    auto it = mSubs.find(topic);
+    if (it != mSubs.end()) {
+        it->second.erase(session);
+        if (it->second.empty()) {
+            mSubs.erase(it);
         }
-        while (!ctx->IsCancelled()) {
-            // Block forever until client disconnects
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        return Status::OK;
     }
+}
 
-    Status Publish(
-        ServerContext* ctx,
-        const PublishRequest* req,
-        PublishReply* reply
-    ) override {
-        std::lock_guard<std::mutex> lock(subsLock);
-        auto it = subscribers.find(req->topic());
-        if (it != subscribers.end()) {
-            for (auto writer : it->second) {
-                Message msg;
-                msg.set_topic(req->topic());
-                msg.set_publish_ts_ms(req->publish_ts_ms());
-                if (req->has_bba())  *msg.mutable_bba() = req->bba();
-                else if (req->has_vbd()) *msg.mutable_vbd() = req->vbd();
-                else *msg.mutable_pbd() = req->pbd();
-                cout << "Forwarding: " << msg.DebugString() << endl;
-                writer->Write(msg);
-            }
-        }
-        reply->set_success(true);
-        return Status::OK;
+void SubscriberRegistry::Publish(const Message& msg) {
+    std::lock_guard<std::mutex> lock(mLock);
+    auto it = mSubs.find(msg.topic());
+    if (it == mSubs.end()) return;
+
+    for (auto* s : it->second) {
+        s->SendMessage(msg);
     }
-};
+}
 
-void RunServer() {
-    std::string server_address("0.0.0.0:50051");
-    PubSubServiceImpl service;
+// SubscriberSession ---------------------------------------------------
 
+SubscriberSession::SubscriberSession(
+    PubSubService::AsyncService* service, ServerCompletionQueue* cq
+): mService(service), mCq(cq), mResponder(&mCtx), mStatus(CallStatus::CREATE) {
+    cout << "New subscriber session pre-created." << endl;
+    Proceed(true);
+}
+
+void SubscriberSession::Proceed(bool ok) {
+    if (mStatus == CallStatus::CREATE) {
+        mStatus = CallStatus::PROCESS;
+        mService->RequestSubscribe(
+            &mCtx, &mRequest, &mResponder, mCq, mCq, this
+        );
+    } else if (mStatus == CallStatus::PROCESS) {
+        cout << "SubscriberSession:PROCESS" << endl;
+        // Spawn a new handler for next subscriber
+        new SubscriberSession(mService, mCq);
+        cout << "New subscriber on topic: " << mRequest.topic() << endl;
+        mTopic = mRequest.topic();
+        SubscriberRegistry::getInstance().Add(mTopic, this);
+    } else if (mStatus == CallStatus::WRITING) {
+        cout << "SubscriberSession:WRITING" << endl;
+        if (!ok) {
+            HandleDisconnect();
+            return;
+        }
+        mStatus = CallStatus::PROCESS; // ready for next write
+    } else {
+        delete this;
+    }
+}
+
+void SubscriberSession::SendMessage(const Message& msg) {
+    if (mStatus != CallStatus::PROCESS) return;
+    mStatus = CallStatus::WRITING;
+    mResponder.Write(msg, this); // async write
+}
+
+void SubscriberSession::OnWriteDone(bool ok) {
+    if (!ok) {
+        cout << "subscriber disconnected" << endl;
+        HandleDisconnect();
+    }
+    // otherwise ready for next write
+    cout << "subscriber: proceed" << endl;
+}
+
+void SubscriberSession::HandleDisconnect() {
+    cout << "Subscriber disconnected from topic: " << mTopic << endl;
+    SubscriberRegistry::getInstance().Remove(mTopic, this);
+    mStatus = CallStatus::FINISH;
+    Proceed(true);
+}
+
+// PublishCall ---------------------------------------------------
+
+PublishCall::PublishCall(
+    PubSubService::AsyncService* service,
+    ServerCompletionQueue* cq
+): mService(service), mCq(cq), mResponder(&mCtx) {
+    mStatus = CallStatus::CREATE;
+    Proceed(true);
+}
+
+void PublishCall::Proceed(bool ok) {
+    if (mStatus == CallStatus::CREATE) {
+        mStatus = CallStatus::PROCESS;
+        mService->RequestPublish(
+            &mCtx, &mRequest, &mResponder, mCq, mCq, this
+        );
+    } else if (mStatus == CallStatus::PROCESS) {
+        // Spawn next publisher handler
+        new PublishCall(mService, mCq);
+        cout << "Publishing: " << mRequest.DebugString() << endl;
+        SubscriberRegistry::getInstance().Publish(mRequest);
+        mReply.set_success(true);
+        mStatus = CallStatus::FINISH;
+        mResponder.Finish(mReply, Status::OK, this);
+    } else delete this;
+}
+
+// ServerImpl ---------------------------------------------------
+
+ServerImpl::~ServerImpl() {
+    mServer->Shutdown();
+    mCq->Shutdown();
+}
+
+void ServerImpl::HandleRpcs() {
+    void* tag;
+    bool ok;
+    while (mCq->Next(&tag, &ok)) {
+        cout << "Received an item in completion queue" << endl;
+        static_cast<CallData*>(tag)->Proceed(ok);
+        cout << "Completion queue item processed" << endl;
+    }
+}
+
+void ServerImpl::Run(const std::string& addr) {
     ServerBuilder builder;
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
+    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
+    builder.RegisterService(&mService);
+    mCq = builder.AddCompletionQueue();
+    mServer = builder.BuildAndStart();
+    cout << "Server listening on " << addr << endl;
 
-    std::unique_ptr<Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
-    server->Wait();
+    new SubscriberSession(&mService, mCq.get());
+    new PublishCall(&mService, mCq.get());
+
+    HandleRpcs();
+}
+
+}
 }
 
 int main() {
-    RunServer();
+    htask::server::ServerImpl server;
+    server.Run("0.0.0.0:50051");
     return 0;
 }
