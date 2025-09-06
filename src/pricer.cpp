@@ -3,7 +3,7 @@
 #include <chrono>
 
 #include "OrderBook.h"
-// #include "md/binance.h"
+#include "md/binance.h"
 #include "md/okx.h"
 #include "md/gateio.h"
 
@@ -94,8 +94,8 @@ void publish(OrderBook& ob, Publisher& pub) {
 int main() {
     htask::util::OrderBook ob;
 
-    // std::jthread tBinance(htask::md_binance::work, std::ref(ob));
-    // std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::jthread tBinance(htask::md_binance::work, std::ref(ob));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     // XXX binance needs some time to synchronize initial order book
     // snapshit with the buffered updates
 
@@ -111,8 +111,10 @@ int main() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         ++counter;
         // if (0 == counter % PUB_IVAL_SEC) publish(ob, pub);
-        if (0 == counter % PRINT_IVAL_SEC) ob.print();
-        // ob.printExtended();
+        if (0 == counter % PRINT_IVAL_SEC) {
+            ob.print();
+            // ob.printExtended();
+        }
     }
     return 0;
 }

@@ -10,6 +10,7 @@ namespace md {
 
 void MdBase::run() {
     while (true) {
+        if (mCbReset) mCbReset();
         ws_client c;
         try {
             c.set_access_channels(websocketpp::log::alevel::all);
@@ -26,13 +27,18 @@ void MdBase::run() {
             });
             c.set_open_handler([&](chdl hdl) {
                 cout << mName << " connection opened" << endl;
-                websocketpp::lib::error_code ec;
-                string subs = mSubsGenerate();
-                c.send(hdl, subs, websocketpp::frame::opcode::text, ec);
-                if (ec) {
-                    throw std::runtime_error(
-                        format("{} subscription error: {}", mName, ec.message())
-                    );
+                if (mSubsGenerate) {
+                    websocketpp::lib::error_code ec;
+                    string subs = mSubsGenerate();
+                    c.send(hdl, subs, websocketpp::frame::opcode::text, ec);
+                    if (ec) {
+                        throw std::runtime_error(
+                            format(
+                                "{} subscription error: {}",
+                                mName,
+                                ec.message())
+                        );
+                    }
                 }
             });
             c.set_fail_handler([&](chdl) {
