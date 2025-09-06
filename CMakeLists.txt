@@ -63,9 +63,10 @@ target_include_directories(pubsub_proto PRIVATE
 
 add_executable(pricer
     src/pricer.cpp
-    # src/md/gateio.cpp
-    # src/md/okx.cpp
-    src/md/binance.cpp
+    src/md/md_base.cpp
+    src/md/gateio.cpp
+    src/md/okx.cpp
+    # src/md/binance.cpp
 )
 target_include_directories(pricer PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}

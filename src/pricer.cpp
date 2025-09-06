@@ -3,9 +3,9 @@
 #include <chrono>
 
 #include "OrderBook.h"
-#include "md/binance.h"
-// #include "md/okx.h"
-// #include "md/gateio.h"
+// #include "md/binance.h"
+#include "md/okx.h"
+#include "md/gateio.h"
 
 #include <grpcpp/grpcpp.h>
 #include "proto/pubsub.grpc.pb.h"
@@ -94,13 +94,13 @@ void publish(OrderBook& ob, Publisher& pub) {
 int main() {
     htask::util::OrderBook ob;
 
-    std::jthread tBinance(htask::md_binance::work, std::ref(ob));
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // std::jthread tBinance(htask::md_binance::work, std::ref(ob));
+    // std::this_thread::sleep_for(std::chrono::seconds(2));
     // XXX binance needs some time to synchronize initial order book
     // snapshit with the buffered updates
 
-    // std::jthread tGateIo(htask::md_gateio::work, std::ref(ob));
-    // std::jthread tOkx(htask::md_okx::work, std::ref(ob));
+    std::jthread tGateIo(htask::md_gateio::work, std::ref(ob));
+    std::jthread tOkx(htask::md_okx::work, std::ref(ob));
 
     Publisher pub(grpc::CreateChannel(
         PUB_ADDR, grpc::InsecureChannelCredentials()
@@ -110,7 +110,7 @@ int main() {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         ++counter;
-        if (0 == counter % PUB_IVAL_SEC) publish(ob, pub);
+        // if (0 == counter % PUB_IVAL_SEC) publish(ob, pub);
         if (0 == counter % PRINT_IVAL_SEC) ob.print();
         // ob.printExtended();
     }

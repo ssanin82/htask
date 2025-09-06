@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include <boost/asio/ssl/context.hpp>   // required for TLS
-// #include <ixwebsocket/IXWebSocket.h>
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/client.hpp>
 #include <nlohmann/json.hpp>
@@ -36,7 +35,7 @@ uint64_t getInitOb(OrderBook& ob) {
         for (const auto& lv: j["asks"]) {
             ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
         }
-        ob.print();
+        // ob.print();
         return j["lastUpdateId"];
     } catch (...) {
         cerr << "Binance - ERROR parsing: " << r.text << endl;
@@ -51,52 +50,8 @@ void processMsg(OrderBook& ob, const json& j) {
     for (const auto& lv: j["a"]) {
         ob.updateLevel(MktData::Binance, false, lv[0], lv[1]);
     }
-    ob.print();
+    // ob.print();
 }
-
-// void _work(OrderBook& ob) {
-//     while (true) {
-//         try {
-//             std::queue<json> initBuffer;
-//             ix::WebSocket ws;
-//             ws.setUrl(URL);
-//             ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
-//                 if (msg->type == ix::WebSocketMessageType::Message) {
-//                     // cout << "Binance received message: " << msg->str << endl;
-//                     json j = nlohmann::json::parse(msg->str);
-//                     if (!init_lu) {
-//                         initBuffer.push(std::move(j));
-//                     } else {
-//                         if (!initBuffer.empty()) {
-//                             while (!initBuffer.empty()) {
-//                                 auto jj = initBuffer.front();
-//                                 initBuffer.pop();
-//                                 if (jj["u"] > init_lu) processMsg(ob, jj);
-//                             }
-//                         }
-//                         processMsg(ob, j);
-//                     }
-//                 } else if (msg->type == ix::WebSocketMessageType::Open) {
-//                     cout << "Binance connection opened" << endl;
-//                 } else if (msg->type == ix::WebSocketMessageType::Error) {
-//                     cerr << "Binance error: " << msg->errorInfo.reason << endl;
-//                 } else if (msg->type == ix::WebSocketMessageType::Close) {
-//                     cout << "Binance connection closed" << endl;
-//                 }
-//             });
-//             ws.start();
-//             while (true) std::this_thread::sleep_for(std::chrono::seconds(1));
-//         } catch (const std::runtime_error& e) {
-//             cerr << "Caught std::runtime_error: " << e.what() << endl;
-//             cout << "Reconnecting..." << endl;
-//         } catch (...) {
-//             cerr << "Caught unknown error" << endl;
-//             cout << "Reconnecting..." << endl;
-//         }
-//         init_lu = 0UL;
-//     }
-//     // ws.stop();
-// }
 
 void _work(OrderBook& ob) {
     while (true) {
@@ -113,9 +68,25 @@ void _work(OrderBook& ob) {
                 ctx->set_default_verify_paths();
                 return ctx;
             });
+            c.set_open_handler([&c](connection_hdl hdl) {
+                cout << "Binance connection opened" << endl;
+                websocketpp::lib::error_code ec;
+                c.send(hdl, SUBS_MSG, websocketpp::frame::opcode::text, ec);
+                if (ec) {
+                    throw std::runtime_error(
+                        std::format("Binance subscription error: {}", ec.message())
+                    );
+                }
+            });
+            c.set_fail_handler([&c](connection_hdl) {
+                throw std::runtime_error(std::format("Binance connection failed"));
+            });
+            c.set_close_handler([&c](connection_hdl) {
+                throw std::runtime_error(std::format("Binance connection closed"));
+            });
             c.set_message_handler([&](connection_hdl, client::message_ptr msg) {
-                cout << "Binance received message: "
-                    << msg->get_payload() << endl;
+                // cout << "Binance received message: "
+                //     << msg->get_payload() << endl;
                 json j = nlohmann::json::parse(msg->get_payload());
                 if (!init_lu) {
                     initBuffer.push(std::move(j));
@@ -150,7 +121,7 @@ void _work(OrderBook& ob) {
 
 void work(OrderBook& ob) {
     std::jthread t(_work, std::ref(ob));
-    // let market data start coming
+    // XXX hack: allow some time for market data to start coming
     std::this_thread::sleep_for(std::chrono::seconds(1));
     while (true) {
         // check if it is a first start or a restart

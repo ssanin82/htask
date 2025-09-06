@@ -157,7 +157,7 @@ void OrderBook::print() {
     }
     SIZE_T liquidity = NO_SIZE;
     for (auto& [k, v]: bids) liquidity += k * getSize(true, k);
-    cout << "BID VOLUME: " << std::fixed << std::setprecision(2)
+    cout << "BID VOLUME: (" << std::fixed << std::setprecision(2)
         << scale_down(liquidity, PRICE_SCALE + SIZE_SCALE) / 1'000'000
         << " mln)" << endl;
     cout << endl;
@@ -188,7 +188,7 @@ void OrderBook::print() {
     }
     liquidity = NO_SIZE;
     for (auto& [k, v]: asks) liquidity += k * getSize(false, k);
-    cout << "ASK VOLUME: " << std::fixed << std::setprecision(2)
+    cout << "ASK VOLUME: (" << std::fixed << std::setprecision(2)
         << scale_down(liquidity, PRICE_SCALE + SIZE_SCALE) / 1'000'000
         << " mln)" << endl;
     cout << endl;
