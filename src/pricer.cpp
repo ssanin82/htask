@@ -4,8 +4,8 @@
 
 #include "OrderBook.h"
 #include "md/binance.h"
-#include "md/okx.h"
-#include "md/gateio.h"
+// #include "md/okx.h"
+// #include "md/gateio.h"
 
 #include <grpcpp/grpcpp.h>
 #include "proto/pubsub.grpc.pb.h"
@@ -99,8 +99,8 @@ int main() {
     // XXX binance needs some time to synchronize initial order book
     // snapshit with the buffered updates
 
-    std::jthread tGateIo(htask::md_gateio::work, std::ref(ob));
-    std::jthread tOkx(htask::md_okx::work, std::ref(ob));
+    // std::jthread tGateIo(htask::md_gateio::work, std::ref(ob));
+    // std::jthread tOkx(htask::md_okx::work, std::ref(ob));
 
     Publisher pub(grpc::CreateChannel(
         PUB_ADDR, grpc::InsecureChannelCredentials()

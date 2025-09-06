@@ -1,59 +1,25 @@
 cmake_minimum_required(VERSION 3.5...3.28)
 project(htask CXX)
 
- set(CMAKE_CXX_STANDARD 23)
- set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(FetchContent)
-
-FetchContent_Declare(
-    ixwebsocket
-    GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
-    GIT_TAG        v11.4.6
-)
-FetchContent_MakeAvailable(ixwebsocket)
-
-FetchContent_Declare(
-    json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG        v3.12.0
-)
-FetchContent_MakeAvailable(json)
-
-FetchContent_Declare(
-  Catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.6.0
-)
-FetchContent_MakeAvailable(Catch2)
-
-FetchContent_Declare(
-  libpsl
-  GIT_REPOSITORY https://github.com/rockdaboot/libpsl.git
-  GIT_TAG        0.21.5
-)
-FetchContent_MakeAvailable(libpsl)
-
-set(CPR_USE_SYSTEM_LIB_PSL 1)
-
-FetchContent_Declare(
-    cpr
-    GIT_REPOSITORY https://github.com/libcpr/cpr.git
-    GIT_TAG        1.12.0
-)
-FetchContent_MakeAvailable(cpr)
-
+find_package(nlohmann_json REQUIRED)
+find_package(catch2 REQUIRED)
+find_package(cpr REQUIRED)
+find_package(websocketpp REQUIRED)
+find_package(Boost REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(absl REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG)
-get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
+find_package(libpsl CONFIG)
+
+set(CPR_USE_SYSTEM_LIB_PSL 1)
 
 # TARGETS
 
 set(PROTO_FILE proto/pubsub.proto)
-get_target_property(Protobuf_INCLUDE_DIRS protobuf::libprotobuf
-   INTERFACE_INCLUDE_DIRECTORIES
-)
 
 add_library(pubsub_proto)
 
@@ -67,13 +33,13 @@ protobuf_generate(
     LANGUAGE grpc
     PROTOS ${PROTO_FILE}
     GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
-    PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}"
+    PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
 )
 
 set(MORE_INCLUDES
-    ${gRPC_INSTALL_DIR}/third_party/protobuf/src
-    ${gRPC_INSTALL_DIR}/third_party/abseil-cpp
-    ${gRPC_INSTALL_DIR}/include
+    ${protobuf_INCLUDE_DIRS_RELEASE}
+    ${abseil_INCLUDE_DIRS_RELEASE}
+    ${grpc_INCLUDE_DIRS_RELEASE}
 )
 set(DEP_LIBS
     pubsub_proto
@@ -97,21 +63,24 @@ target_include_directories(pubsub_proto PRIVATE
 
 add_executable(pricer
     src/pricer.cpp
-    src/md/gateio.cpp
-    src/md/okx.cpp
+    # src/md/gateio.cpp
+    # src/md/okx.cpp
     src/md/binance.cpp
 )
 target_include_directories(pricer PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${ixwebsocket_SOURCE_DIR}
-    ${cpr_SOURCE_DIR}
+    ${websocketpp_INCLUDE_DIRS_RELEASE}
+    ${cpr_INCLUDE_DIRS_RELEASE}
     ${MORE_INCLUDES}
 )
 target_link_libraries(pricer PRIVATE
     htlib
     ${DEP_LIBS}
-    ixwebsocket
+    websocketpp::websocketpp
+    Boost::boost
+    OpenSSL::SSL
+    OpenSSL::Crypto
     nlohmann_json::nlohmann_json
     cpr::cpr
 )

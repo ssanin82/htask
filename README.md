@@ -14,6 +14,7 @@
 - to get a bigger order book with Binance some synchronization is performed with snapdhot and buffered updates, thus Binance market data has some headstart. The synchronization is based on sleep, in production it should be event-based (spin-wait or conditional variable)
 
 # TODO justify integer arithmetic
+# TODO md reconnect loop while(true)
 
 
 ## Binance Reference Data
