@@ -23,7 +23,7 @@ using namespace htask::util;
 
 constexpr int PUB_IVAL_SEC = 1;
 constexpr int PRINT_IVAL_SEC = 5;
-constexpr const char* PUB_ADDR = "0.0.0.0:5051";
+constexpr const char* PUB_ADDR = "0.0.0.0:50051";
 
 class Publisher {
     std::unique_ptr<PubSubService::Stub> stub;
@@ -110,7 +110,7 @@ int main() {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         ++counter;
-        // if (0 == counter % PUB_IVAL_SEC) publish(ob, pub);
+        if (0 == counter % PUB_IVAL_SEC) publish(ob, pub);
         if (0 == counter % PRINT_IVAL_SEC) {
             ob.print();
             // ob.printExtended();

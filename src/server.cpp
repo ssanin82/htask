@@ -1,3 +1,4 @@
+#include <iostream>
 #include <mutex>
 #include <map>
 #include <vector>
@@ -16,6 +17,7 @@ using pubsub::SubscriptionRequest;
 using pubsub::PublishRequest;
 using pubsub::PublishReply;
 using pubsub::Message;
+using std::cout, std::endl;
 
 class PubSubServiceImpl final : public PubSubService::Service {
 private:
@@ -30,6 +32,7 @@ public:
     ) override {
         std::string topic = req->topic();
         {
+            cout << "Subscribe request, topic: " << req->topic() << endl;
             std::lock_guard<std::mutex> lock(subsLock);
             subscribers[topic].push_back(writer);
         }
@@ -54,6 +57,7 @@ public:
                 if (req->has_bba())  *msg.mutable_bba() = req->bba();
                 else if (req->has_vbd()) *msg.mutable_vbd() = req->vbd();
                 else *msg.mutable_pbd() = req->pbd();
+                cout << "Forwarding: " << msg.DebugString() << endl;
                 writer->Write(msg);
             }
         }

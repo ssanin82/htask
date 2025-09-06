@@ -10,7 +10,7 @@ using pubsub::PubSubService;
 using pubsub::SubscriptionRequest;
 using pubsub::Message;
 
-constexpr const char* SUB_ADDR = "0.0.0.0:5051";
+constexpr const char* SUB_ADDR = "0.0.0.0:50051";
 
 class Subscriber {
     std::unique_ptr<PubSubService::Stub> stub;
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     std::string topic(argv[1]);
-    if (topic != "bbo" && topic != "vbd" && topic != "pbd") {
+    if (topic != "bba" && topic != "vbd" && topic != "pbd") {
         std::cout << "Invalid topic [" << topic << "]!" << std::endl;
         std::cout << "Supported topics: bba, vbd, pbd" << std::endl;
         return -1;
