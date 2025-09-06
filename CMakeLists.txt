@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(nlohmann_json REQUIRED)
-find_package(catch2 REQUIRED)
+# find_package(catch2 REQUIRED)
 find_package(cpr REQUIRED)
 find_package(websocketpp REQUIRED)
 find_package(Boost REQUIRED)
