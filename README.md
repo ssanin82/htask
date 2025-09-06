@@ -15,6 +15,7 @@
 
 # TODO justify integer arithmetic
 # TODO md reconnect loop while(true) - justify for production
+# TODO timestamps in local time, though in production - UTC
 
 
 ## Binance Reference Data

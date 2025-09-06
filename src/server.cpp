@@ -54,6 +54,7 @@ public:
             for (auto writer : it->second) {
                 Message msg;
                 msg.set_topic(req->topic());
+                msg.set_publish_ts_ms(req->publish_ts_ms());
                 if (req->has_bba())  *msg.mutable_bba() = req->bba();
                 else if (req->has_vbd()) *msg.mutable_vbd() = req->vbd();
                 else *msg.mutable_pbd() = req->pbd();

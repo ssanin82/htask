@@ -13,10 +13,11 @@ message SubscriptionRequest {
 
 message PublishRequest {
   string topic = 1;
+  uint64 publish_ts_ms = 2;
   oneof payload {
-    BbaData bba = 2;
-    VolBandsData vbd = 3;
-    PriceBandsData pbd = 4;
+    BbaData bba = 3;
+    VolBandsData vbd = 4;
+    PriceBandsData pbd = 5;
   }
 }
 
@@ -26,10 +27,11 @@ message PublishReply {
 
 message Message {
   string topic = 1;
+  uint64 publish_ts_ms = 2;
   oneof payload {
-    BbaData bba = 2;
-    VolBandsData vbd = 3;
-    PriceBandsData pbd = 4;
+    BbaData bba = 3;
+    VolBandsData vbd = 4;
+    PriceBandsData pbd = 5;
   }
 }
 

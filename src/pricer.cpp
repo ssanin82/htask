@@ -36,14 +36,19 @@ public:
         ClientContext ctx;
         Status status = stub->Publish(&ctx, req, &reply);
         if (status.ok() && reply.success()) {
-            std::cout << "[Publisher] Sent: "
-                << req.DebugString()
-                << " to topic " << req.topic() << std::endl;
+            std::cout << "[Publisher] Sent:" << std::endl
+                << req.DebugString() << std::endl;
         } else std::cerr << "Publish failed." << std::endl;
     }
 };
 
 void publish(OrderBook& ob, Publisher& pub) {
+    auto now = std::chrono::system_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()
+    );
+    time_t ts_ms = dur.count();
+
     auto bbid = ob.getBestBid();
     auto bask = ob.getBestAsk();
     BbaData bba;
@@ -53,6 +58,7 @@ void publish(OrderBook& ob, Publisher& pub) {
     bba.set_best_ask_size(bask.second);
     PublishRequest requestBba;
     requestBba.set_topic("bba");
+    requestBba.set_publish_ts_ms(ts_ms);
     *requestBba.mutable_bba() = bba;
     pub.Publish(requestBba);
 
@@ -68,8 +74,9 @@ void publish(OrderBook& ob, Publisher& pub) {
     vbd.mutable_mln_buy_price()->insert({50, ob.getVolumePriceMln(false, 50)});
     vbd.mutable_mln_sell_price()->insert({50, ob.getVolumePriceMln(true, 50)});
     PublishRequest requestVbd;
-    requestBba.set_topic("vbd");
-    *requestBba.mutable_vbd() = vbd;
+    requestVbd.set_topic("vbd");
+    requestVbd.set_publish_ts_ms(ts_ms);
+    *requestVbd.mutable_vbd() = vbd;
     pub.Publish(requestVbd);
 
     PriceBandsData pbd;
@@ -86,8 +93,9 @@ void publish(OrderBook& ob, Publisher& pub) {
     pbd.mutable_bbo_up_bps()->insert({1000, static_cast<int>(mid * (1.1))});
     pbd.mutable_bbo_down_bps()->insert({1000, static_cast<int>(mid * (0.9))});
     PublishRequest requestPbd;
-    requestBba.set_topic("pbd");
-    *requestBba.mutable_pbd() = pbd;
+    requestPbd.set_topic("pbd");
+    requestPbd.set_publish_ts_ms(ts_ms);
+    *requestPbd.mutable_pbd() = pbd;
     pub.Publish(requestPbd);
 }
 

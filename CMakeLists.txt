@@ -103,6 +103,7 @@ target_include_directories(server PRIVATE
 add_executable(consumer src/consumer.cpp)
 target_link_libraries(consumer pubsub_proto ${DEP_LIBS})
 target_include_directories(consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
     ${MORE_INCLUDES}
 )

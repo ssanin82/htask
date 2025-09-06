@@ -66,5 +66,21 @@ inline int str_to_scaled_num(const string& s, int scale) {
     return res;
 }
 
+inline string scale_down_to_str(uint64_t n, int scale) {
+    if (!n) return "0";
+    string res = std::to_string(n);
+    string left = "0";
+    string right = res;
+    if (res.length() > scale) {
+        left = res.substr(0, res.length() - scale);
+        right = res.substr(res.length() - scale);
+    }
+    if (scale > right.length()) {
+        int npad = scale - right.length();
+        right = string(npad, '0') + right;
+    }
+    return left + + "." + right;
+}
+
 }
 }
