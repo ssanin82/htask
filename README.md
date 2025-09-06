@@ -16,6 +16,7 @@
 # TODO justify integer arithmetic
 # TODO md reconnect loop while(true) - justify for production
 # TODO timestamps in local time, though in production - UTC
+# TIDI choice of packages - whatever works (simdjson vs nlohmann)
 
 
 ## Binance Reference Data

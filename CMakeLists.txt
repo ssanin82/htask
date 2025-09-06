@@ -14,6 +14,7 @@ find_package(absl REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG)
 find_package(libpsl CONFIG)
+find_package(argparse CONFIG)
 
 set(CPR_USE_SYSTEM_LIB_PSL 1)
 
@@ -73,6 +74,7 @@ target_include_directories(pricer PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${websocketpp_INCLUDE_DIRS_RELEASE}
     ${cpr_INCLUDE_DIRS_RELEASE}
+    ${argparse_INCLUDE_DIRS_RELEASE}
     ${MORE_INCLUDES}
 )
 target_link_libraries(pricer PRIVATE
@@ -104,7 +106,8 @@ target_include_directories(server PRIVATE
 add_executable(consumer src/consumer.cpp)
 target_link_libraries(consumer pubsub_proto ${DEP_LIBS})
 target_include_directories(consumer PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${argparse_INCLUDE_DIRS_RELEASE}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${MORE_INCLUDES}
 )

@@ -3,6 +3,7 @@
 
 #include <grpcpp/grpcpp.h>
 #include "proto/pubsub.grpc.pb.h"
+#include "argparse/argparse.hpp"
 
 #include "util.h"
 
@@ -15,8 +16,6 @@ using pubsub::Message;
 using std::cout, std::endl, std::string;
 
 using namespace htask::util;
-
-constexpr const char* SUB_ADDR = "0.0.0.0:50051";
 
 class Subscriber {
     std::unique_ptr<PubSubService::Stub> stub;
@@ -113,19 +112,32 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        cout << "Usage: ./consumer <topic>" << endl;
-        return -1;
+    argparse::ArgumentParser program("pricer");
+    program.add_argument("--host")
+        .help("Server host")
+        .default_value(std::string("localhost"));
+    program.add_argument("--topic")
+        .help("Topic name")
+        .default_value(std::string("bba"));
+    program.add_argument("--port")
+        .help("Server port")
+        .scan<'i', int>() // parse as int
+        .default_value(50051);
+    try {
+        program.parse_args(argc, argv);
     }
-    string topic(argv[1]);
-    if (topic != "bba" && topic != "vbd" && topic != "pbd") {
-        cout << "Invalid topic [" << topic << "]!" << endl;
-        cout << "Supported topics: bba, vbd, pbd" << endl;
-        return -1;
+    catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program << std::endl;
+        return 1;
     }
 
+    std::string host = program.get<std::string>("--host");
+    std::string topic = program.get<std::string>("--topic");
+    int port = program.get<int>("--port");
+
     Subscriber sub(grpc::CreateChannel(
-        SUB_ADDR, grpc::InsecureChannelCredentials()
+        std::format("{}:{}", host, port), grpc::InsecureChannelCredentials()
     ));
     sub.Subscribe(topic);
 }

@@ -9,6 +9,8 @@
 
 #include <grpcpp/grpcpp.h>
 #include "proto/pubsub.grpc.pb.h"
+#include "argparse/argparse.hpp"
+
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -23,7 +25,6 @@ using namespace htask::util;
 
 constexpr int PUB_IVAL_SEC = 1;
 constexpr int PRINT_IVAL_SEC = 5;
-constexpr const char* PUB_ADDR = "0.0.0.0:50051";
 
 class Publisher {
     std::unique_ptr<PubSubService::Stub> stub;
@@ -99,7 +100,27 @@ void publish(OrderBook& ob, Publisher& pub) {
     pub.Publish(msgPbd);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    argparse::ArgumentParser program("pricer");
+    program.add_argument("--host")
+        .help("Server host")
+        .default_value(std::string("localhost"));
+    program.add_argument("--port")
+        .help("Server port")
+        .scan<'i', int>() // parse as int
+        .default_value(50051);
+    try {
+        program.parse_args(argc, argv);
+    }
+    catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program << std::endl;
+        return 1;
+    }
+
+    std::string host = program.get<std::string>("--host");
+    int port = program.get<int>("--port");
+
     htask::util::OrderBook ob;
 
     std::jthread tBinance(htask::md_binance::work, std::ref(ob));
@@ -111,7 +132,7 @@ int main() {
     std::jthread tOkx(htask::md_okx::work, std::ref(ob));
 
     Publisher pub(grpc::CreateChannel(
-        PUB_ADDR, grpc::InsecureChannelCredentials()
+        std::format("{}:{}", host, port), grpc::InsecureChannelCredentials()
     ));
 
     uint32_t counter = 0;
