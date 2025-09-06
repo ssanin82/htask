@@ -39,14 +39,14 @@ public:
             uint64_t ts_ms = msg.publish_ts_ms();
             std::time_t time_t_now = ts_ms / 1000;
             std::tm tm_now = *std::localtime(&time_t_now);
+            cout << "UPDATE ts: "
+                << std::put_time(&tm_now, "%Y-%m-%d %H:%M:%S")
+                << "." << (ts_ms % 1000) << endl;
             if (msg.topic() == "bba") {
                 uint32_t bbp = msg.bba().best_bid_price();
                 uint32_t bbs = msg.bba().best_bid_size();
                 uint32_t bap = msg.bba().best_ask_price();
                 uint32_t bas = msg.bba().best_ask_size();
-                cout << "UPDATE ts: "
-                    << std::put_time(&tm_now, "%Y-%m-%d %H:%M:%S")
-                    << "." << (ts_ms % 1000) << endl;
                 cout << "BEST BID: price="
                     << scale_down_to_str(bbp, PRICE_SCALE)
                     << ", size=" << scale_down_to_str(bbs, SIZE_SCALE) << endl;
