@@ -1,6 +1,6 @@
 # Simple Price Aggregator
 
-Aggregates spot BTCUSDT prices from 3 urces:
+Aggregates spot BTCUSDT prices from 3 sources:
 - Binance
 - OKX
 - Gate.io
@@ -42,11 +42,12 @@ The chosen price/size precision is maximum of corresponding precisions on all 3 
 ### Design Simplifications
 - OrderBook::print/printExtended functions have (hardcoded) knowledge about the exchanges, which makes the code a less extensible, but these are utility functions, they don't have not impact on the main functionality. It could be possible to somehow "register" running market data feeds and implement these print functions in generic way, I didn't go that way to avoid overcomplication the design for this small task.
 - To accommodate Binance order snapshot synchronization, Binance starts first with some headstart of few seconds. It needs it's own market data clean on start/restart - handling the restart in generic way would overcomplicate the implementation, having to be able to c;ear the consolidated order book for one exchange only while other exchanges keep updating it. The synchronization for this start is based on sleep, which is not ideal, but simplified for the task only. In production things like this should be event-based (spin-wait or conditional variable).
-- In production there should be some service discovery mode, or some conteiner orchestration like Kubernetes used. For the task purpose and simplicity, the publishing topics are hardcoded in the components, number of components is fixed and considered to be known.
+- In production there should be some service discovery mechanism, or some conteiner orchestration like Kubernetes used. For the task purpose and simplicity, the publishing topics are hardcoded in the components, number of components is fixed and considered to be known.
 - The pricer publishes at fixed time intervals. Ideally, it should be real-time. Even though we don't have real-time market data, it is possible to implement some "simulation" of real-time order book combining ticker data with depth updates. It may be good enough for some strategy to reason about the liquidity and prices, however probably not in the scope of this task.
 - There are some hardcodings in the code to save time. Ideally, it should be stored as external configurations to avoid rebuilding each time after change - I had a good experience with MongoDB (also, I saw some people trying to store these configs directly as a part of kebernetes manifests, but it usually resulted in release confusion and nightmare). This is not in the scope of this task, I believe.
 - ### Other Considrations
 - For gRPC server I went for asynchronous event processing, as simple as it can be. It would publish the data and cleanup the subscriber sessions on disconnect properly. Since it is async, it should be able to process a reasonable message load, though it is not on the task scope.
+- Maybe, a separate gRPC server component is not absolutely necessary for this task (the task definition diagram does not show a separate server component), but it would be a bit tricker to do, maybe somthing like ZeroMQ would be more suitable. I went for it as the requirement was "scalability", you never know how many publishers eventually the system have if it is used in the production long enough.
 
 ## Building/Starting/Stopping
 All to be done from the root folder of the project.
@@ -56,8 +57,10 @@ All to be done from the root folder of the project.
 - Tracing best bid/opper prices: `docker-compose logs -f get_bba`
 - Tracing notional volume bands: `docker-compose logs -f get_vbd`
 - Tracing mid price with "deviations": `docker-compose logs -f get_pbd`
-To speed up the build process, I uploaded the final docker image on Dockerhub (may take a good half an hour to build from scratch):
-# TODO upload
-# TODO uncomment docker-compose.yaml
-????? describe docker-compose.yaml modifications for the uploaded image
+
+
+
+
+
 # TODO test: gRPC multiple subscribers on same topic
+# TODO grammarly on all this
