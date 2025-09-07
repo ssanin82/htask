@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
     argparse::ArgumentParser program("pricer");
     program.add_argument("--host")
         .help("Server host")
-        .default_value(std::string("localhost"));
+        .default_value(std::string("0.0.0.0"));
     program.add_argument("--port")
         .help("Server port")
         .scan<'i', int>() // parse as int

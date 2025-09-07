@@ -2,7 +2,7 @@ FROM doner357/cpp-conan-base:latest-noble-c18g14cn2
 
 WORKDIR /work
 RUN sudo apt update
-ENV REBUILD_TRIGGER="0"
+ENV REBUILD_TRIGGER="1"
 RUN git clone https://github.com/ssanin82/htask.git
 WORKDIR htask
 RUN conan install . --output-folder=build --build=missing
