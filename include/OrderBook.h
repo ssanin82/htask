@@ -42,10 +42,11 @@ class OrderBook {
         PRICE_T getVolumePrice(bool isBid, SIZE_T target_usdt);
         PRICE_T getVolumePriceMln(bool isBid, int x);
         PRICE_T getMidPrice();
+        void clear();
 
+        // for run-time manual diagnostics only
         void print();
         void printExtended();
-        void clear();
 };
 
 }

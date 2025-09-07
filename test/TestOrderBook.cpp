@@ -17,6 +17,8 @@ public:
     OrderBook ob;
 };
 
+// basics for bid
+
 TEST_CASE_METHOD(ObTestFixture, "Order book bbid", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Okx, true, "123.45", "11");
@@ -43,13 +45,74 @@ TEST_CASE_METHOD(ObTestFixture, "Order book bbid delete", "[fixture]") {
     REQUIRE(eq(10, scale_down(bbid.second, SIZE_SCALE)));
 }
 
-TEST_CASE_METHOD(ObTestFixture, "Order book bask delete all", "[fixture]") {
+TEST_CASE_METHOD(ObTestFixture, "Order book bbid delete all", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "123.45", "10");
     ob.updateLevel(MktData::Binance, true, "123.45", "0");
     auto bbid = ob.getBestBid();
     REQUIRE(!bbid.first);
     REQUIRE(!bbid.second);
 }
+
+// basics for asks: usually, they are in the separate conditional branch,
+// so need separate tests for a better coverage
+
+TEST_CASE_METHOD(ObTestFixture, "Order book bask", "[fixture]") {
+    ob.updateLevel(MktData::GateIo, false, "123.45", "10");
+    ob.updateLevel(MktData::Okx, false, "123.45", "11");
+    auto bask = ob.getBestAsk();
+    REQUIRE(eq(123.45, scale_down(bask.first, PRICE_SCALE)));
+    REQUIRE(eq(21, scale_down(bask.second, SIZE_SCALE)));
+}
+
+TEST_CASE_METHOD(ObTestFixture, "Order book bask replace", "[fixture]") {
+    ob.updateLevel(MktData::Binance, false, "123.45", "10");
+    ob.updateLevel(MktData::Okx, false, "123.45", "11");
+    ob.updateLevel(MktData::Okx, false, "123.45", "12");
+    auto bask = ob.getBestAsk();
+    REQUIRE(eq(123.45, scale_down(bask.first, PRICE_SCALE)));
+    REQUIRE(eq(22, scale_down(bask.second, SIZE_SCALE)));
+}
+
+TEST_CASE_METHOD(ObTestFixture, "Order book bask delete", "[fixture]") {
+    ob.updateLevel(MktData::Binance, false, "123.45", "10");
+    ob.updateLevel(MktData::Okx, false, "123.45", "11");
+    ob.updateLevel(MktData::Okx, false, "123.45", "0");
+    auto bask = ob.getBestAsk();
+    REQUIRE(eq(123.45, scale_down(bask.first, PRICE_SCALE)));
+    REQUIRE(eq(10, scale_down(bask.second, SIZE_SCALE)));
+}
+
+TEST_CASE_METHOD(ObTestFixture, "Order book bask delete all", "[fixture]") {
+    ob.updateLevel(MktData::Binance, false, "123.45", "10");
+    ob.updateLevel(MktData::Binance, false, "123.45", "0");
+    auto bask = ob.getBestAsk();
+    REQUIRE(!bask.first);
+    REQUIRE(!bask.second);
+}
+
+// combined
+
+TEST_CASE_METHOD(ObTestFixture, "Order book bask/bask combined", "[fixture]") {
+    // asks
+    ob.updateLevel(MktData::GateIo, false, "123.46", "10");
+    ob.updateLevel(MktData::Binance, false, "123.45", "11");
+    ob.updateLevel(MktData::Okx, false, "123.45", "11");
+    ob.updateLevel(MktData::Binance, false, "123.44", "11");
+    // bids
+    ob.updateLevel(MktData::Binance, true, "123.43", "10");
+    ob.updateLevel(MktData::Okx, true, "123.42", "11");
+    ob.updateLevel(MktData::GateIo, true, "123.41", "11");
+    ob.updateLevel(MktData::Binance, true, "123.43", "0"); // deletion
+    //
+    auto bask = ob.getBestAsk();
+    REQUIRE(eq(123.44, scale_down(bask.first, PRICE_SCALE)));
+    REQUIRE(eq(11, scale_down(bask.second, SIZE_SCALE)));
+    auto bbid = ob.getBestBid();
+    REQUIRE(eq(123.42, scale_down(bbid.first, PRICE_SCALE)));
+    REQUIRE(eq(11, scale_down(bbid.second, SIZE_SCALE)));
+}
+
+// others
 
 TEST_CASE_METHOD(ObTestFixture, "Volume pricer", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "1", "10");

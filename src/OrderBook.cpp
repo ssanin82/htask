@@ -40,7 +40,7 @@ void OrderBook::updateLevel(
                 if (asks.at(key).empty()) asks.erase(key);
             }
             if (xchAsks.contains(md) && xchAsks[md].contains(key)) {
-                xchBids[md].erase(key);
+                xchAsks[md].erase(key);
             }
         } else  {
             asks[key][md] = sz;
