@@ -4,17 +4,11 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        command: ["/work/htask/build/pricer", "--host", "server"]
-
-    server:
-        build:
-            context: .
-            dockerfile: Dockerfile
         ports:
           - "50051:50051"
-        command: /work/htask/build/server
+        command: ["/work/htask/build/pricer"]
         healthcheck:
-            test: ["CMD-SHELL", "netstat -nat | grep 50051 | grep -q LISTEN"]
+            test: ["CMD-SHELL", "nc -zv localhost 50051 | grep -q open"]
             interval: 2s
             timeout: 2s
             retries: 5
@@ -24,25 +18,25 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        command: ["/work/htask/build/consumer", "--host", "server"]
+        command: ["/work/htask/build/consumer", "--host", "pricer"]
         depends_on:
-            server:
+            pricer:
                 condition: service_healthy
 
     get_vbd:
         build:
             context: .
             dockerfile: Dockerfile
-        command: ["/work/htask/build/consumer", "--host", "server", "--topic", "vbd"]
+        command: ["/work/htask/build/consumer", "--host", "pricer", "--topic", "vbd"]
         depends_on:
-            server:
+            pricer:
                 condition: service_healthy
 
     get_pbd:
         build:
             context: .
             dockerfile: Dockerfile
-        command: ["/work/htask/build/consumer", "--host", "server", "--topic", "pbd"]
+        command: ["/work/htask/build/consumer", "--host", "pricer", "--topic", "pbd"]
         depends_on:
-            server:
+            pricer:
                 condition: service_healthy
