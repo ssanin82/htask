@@ -54,7 +54,7 @@ Prices/sizes are converted to floats at the consumer component side for display.
 
 The chosen price/size precision is the maximum of the corresponding precisions on all 3 exchanges. It would have been impossible to use this technique with more exotic exchanges, like Synfutures, which do not have a fixed price tick.
 
-
+*NOTE*: In a consolidated order book often bid and ask cross, which never happens in an order book of an individual exchange.
 
 ### Other Assumptions and Simplifications:
 

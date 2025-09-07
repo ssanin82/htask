@@ -8,7 +8,7 @@ services:
           - "50051:50051"
         command: ["/work/htask/build/pricer"]
         healthcheck:
-            test: ["CMD-SHELL", "nc -zv localhost 50051 2>&1 | grep -q open"]
+            test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/50051'"]
             interval: 2s
             timeout: 2s
             retries: 5
