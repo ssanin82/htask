@@ -4,7 +4,7 @@ WORKDIR /work
 
 RUN sudo apt update
 RUN sudo apt upgrade -y
-RUN sudo apt-get install -y net-tools
+RUN sudo apt-get install -y iproute2
 
 ENV REBUILD_TRIGGER="0"
 RUN git clone https://github.com/ssanin82/htask.git

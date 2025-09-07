@@ -55,26 +55,11 @@ TEST_CASE_METHOD(ObTestFixture, "Volume pricer", "[fixture]") {
     ob.updateLevel(MktData::Binance, true, "1", "10");
     ob.updateLevel(MktData::Binance, true, "2", "8");
     ob.updateLevel(MktData::Binance, true, "3", "6");
-    REQUIRE(eq(
-        3.,
-        scale_down(ob.getVolumePrice(true, 10),PRICE_SCALE)
-    ));
-    REQUIRE(eq(
-        3.,
-        scale_down(ob.getVolumePrice(true, 18),PRICE_SCALE)
-    ));
-    REQUIRE(eq(
-        2.85,
-        scale_down(ob.getVolumePrice(true, 20),PRICE_SCALE)
-    ));
-    REQUIRE(eq(
-        1.83,
-        scale_down(ob.getVolumePrice(true, 44),PRICE_SCALE)
-    ));
-    REQUIRE(eq(
-        0.,
-        scale_down(ob.getVolumePrice(true, 45),PRICE_SCALE)
-    ));
+    REQUIRE(eq(3., scale_down(ob.getVolumePrice(true, 10),PRICE_SCALE)));
+    REQUIRE(eq(3., scale_down(ob.getVolumePrice(true, 18),PRICE_SCALE)));
+    REQUIRE(eq(2.85, scale_down(ob.getVolumePrice(true, 20),PRICE_SCALE)));
+    REQUIRE(eq(1.83, scale_down(ob.getVolumePrice(true, 44),PRICE_SCALE)));
+    REQUIRE(eq(0., scale_down(ob.getVolumePrice(true, 45),PRICE_SCALE)));
 }
 
 TEST_CASE_METHOD(ObTestFixture, "Mid price", "[fixture]") {
@@ -85,4 +70,14 @@ TEST_CASE_METHOD(ObTestFixture, "Mid price", "[fixture]") {
     ob.updateLevel(MktData::Okx, true, "2.9", "10");
     ob.updateLevel(MktData::Binance, true, "2.8", "10");
     REQUIRE(eq(3.1, scale_down(ob.getMidPrice(), PRICE_SCALE)));
+}
+
+TEST_CASE_METHOD(ObTestFixture, "getVolumePriceMln", "[fixture]") {
+    ob.updateLevel(MktData::GateIo, false, "1", "3000000");
+    ob.updateLevel(MktData::Okx, false, "2", "2000000");
+    ob.updateLevel(MktData::GateIo, false, "3", "1000000");
+    REQUIRE(eq(1., scale_down(ob.getVolumePriceMln(false, 2), PRICE_SCALE)));
+    REQUIRE(eq(1.14, scale_down(ob.getVolumePriceMln(false, 4), PRICE_SCALE)));
+    REQUIRE(eq(1.66, scale_down(ob.getVolumePriceMln(false, 10), PRICE_SCALE)));
+    REQUIRE(eq(0., scale_down(ob.getVolumePriceMln(false, 11), PRICE_SCALE)));
 }

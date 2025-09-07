@@ -97,11 +97,15 @@ PRICE_T OrderBook::getVolumePrice(bool isBid, SIZE_T target_usdt) {
     while (lvIt != lvEnd) {
         PRICE_T price = lvIt->first;
         SIZE_T sz = NO_SIZE;
-        for (auto& [_, v]: lvIt->second) sz += v;
+        for (auto& [p, v]: lvIt->second) {
+            sz += v;
+        }
         SIZE_T levelNotional = price * sz;
         if (gt(notionalSoFar + levelNotional, target_usdt)) {
             // XXX division may create imprecision, but that's not critical here
-            acc.push_back(make_pair(price, (target_usdt - notionalSoFar) / price));
+            acc.push_back(make_pair(
+                price, (target_usdt - notionalSoFar) / price)
+            );
             notionalSoFar = target_usdt;
             break;
         } else {
@@ -123,8 +127,8 @@ PRICE_T OrderBook::getVolumePrice(bool isBid, SIZE_T target_usdt) {
     return 0;
 }
 
-double OrderBook::getVolumePriceMln(bool isBid, int x) {
-    if (!x) return -1;
+PRICE_T OrderBook::getVolumePriceMln(bool isBid, int x) {
+    if (!x) return 0;
     return getVolumePrice(isBid, x * 1'000'000);
 }
 

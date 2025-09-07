@@ -40,7 +40,7 @@ class OrderBook {
         std::pair<PRICE_T, SIZE_T> getBestAsk();
 
         PRICE_T getVolumePrice(bool isBid, SIZE_T target_usdt);
-        double getVolumePriceMln(bool isBid, int x);
+        PRICE_T getVolumePriceMln(bool isBid, int x);
         PRICE_T getMidPrice();
 
         void print();
