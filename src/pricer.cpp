@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <queue>
+#include <condition_variable>
 
 #include "OrderBook.h"
 #include "md/binance.h"
@@ -12,38 +14,77 @@
 #include "argparse/argparse.hpp"
 
 
-using grpc::Channel;
-using grpc::ClientContext;
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
 using grpc::Status;
+using grpc::ServerWriter;
 using pubsub::PubSubService;
 using pubsub::Message;
-using pubsub::PublishReply;
+using pubsub::SubscriptionRequest;
 using pubsub::BbaData;
 using pubsub::VolBandsData;
 using pubsub::PriceBandsData;
 using namespace htask::util;
+using std::cout, std::endl;
 
 constexpr int PUB_IVAL_SEC = 1;
 constexpr int PRINT_IVAL_SEC = 5;
 
-class Publisher {
-    std::unique_ptr<PubSubService::Stub> stub;
+class SubscriberQueue {
+    std::mutex mLock;
+    std::queue<Message> mQ;
+    std::condition_variable mCv;
 public:
-    Publisher(std::shared_ptr<Channel> channel):
-        stub(PubSubService::NewStub(channel)) {}
+    void Push(const Message& msg) {
+        std::unique_lock<std::mutex> lock(mLock);
+        mQ.push(msg);
+        mCv.notify_one();
+    }
 
-    void Publish(const Message& msg) {
-        PublishReply reply;
-        ClientContext ctx;
-        Status status = stub->Publish(&ctx, msg, &reply);
-        if (status.ok() && reply.success()) {
-            // std::cout << "[Publisher] Sent:" << std::endl
-            //     << req.DebugString() << std::endl;
-        }// else std::cerr << "Publish failed." << std::endl;
+    bool Pop(Message& msg, ServerContext* context) {
+        std::unique_lock<std::mutex> lock(mLock);
+        while (mQ.empty()) {
+            if (context->IsCancelled()) {
+                cout << "Client disconnected, topic: " << msg.topic() << endl;
+                return false;
+            }
+            mCv.wait_for(lock, std::chrono::milliseconds(100));
+        }
+        msg = mQ.front();
+        mQ.pop();
+        return true;
     }
 };
 
-void publish(OrderBook& ob, Publisher& pub) {
+class PubSubServiceImpl final : public PubSubService::Service {
+    std::mutex mLock;
+    std::map<std::string, std::vector<std::shared_ptr<SubscriberQueue>>> mSubs;
+public:
+    Status Subscribe(ServerContext* context,
+                     const SubscriptionRequest* request,
+                     ServerWriter<Message>* writer) override {
+        std::string topic = request->topic();
+        auto queue = std::make_shared<SubscriberQueue>();
+        {
+            std::unique_lock<std::mutex> lock(mLock);
+            mSubs[topic].push_back(queue);
+        }
+        cout << "New subscriber on topic: " << topic << endl;
+        Message msg;
+        while (queue->Pop(msg, context)) writer->Write(msg);
+        cout << "Subscriber disconnected from topic: " << topic << endl;
+        return Status::OK;
+    }
+
+    void Publish(const Message& msg) {
+        std::unique_lock<std::mutex> lock(mLock);
+        auto it = mSubs.find(msg.topic());
+        if (it != mSubs.end()) for (auto& q: it->second) q->Push(msg);
+    }
+};
+
+void publish(OrderBook& ob, PubSubServiceImpl& pub) {
     auto now = std::chrono::system_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch()
@@ -131,9 +172,13 @@ int main(int argc, char* argv[]) {
     std::jthread tGateIo(htask::md_gateio::work, std::ref(ob));
     std::jthread tOkx(htask::md_okx::work, std::ref(ob));
 
-    Publisher pub(grpc::CreateChannel(
-        std::format("{}:{}", host, port), grpc::InsecureChannelCredentials()
-    ));
+    std::string pub_addr = std::format("{}:{}", host, port);
+    PubSubServiceImpl pub;
+    ServerBuilder builder;
+    builder.AddListeningPort(pub_addr, grpc::InsecureServerCredentials());
+    builder.RegisterService(&pub);
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::cout << "Publisher listening on " << pub_addr << std::endl;
 
     uint32_t counter = 0;
     while (true) {

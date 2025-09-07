@@ -1,5 +1,6 @@
 [requires]
 grpc/1.72.0
+protobuf/5.27.0
 websocketpp/0.8.2
 boost/1.83.0
 openssl/3.5.2
@@ -8,6 +9,9 @@ catch2/3.10.0
 cpr/1.12.0
 libpsl/0.21.5
 argparse/3.2
+
+[tool_requires]
+protobuf/5.27.0
 
 [generators]
 CMakeDeps

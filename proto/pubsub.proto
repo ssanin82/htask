@@ -1,18 +1,16 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 package pubsub;
 
 service PubSubService {
     rpc Subscribe(SubscriptionRequest) returns (stream Message);
-    rpc Publish(Message) returns (PublishReply);
+    rpc Publish(Message) returns (google.protobuf.Empty);
 }
 
 message SubscriptionRequest {
   string topic = 1;
-}
-
-message PublishReply {
-  bool success = 1;
 }
 
 message Message {
