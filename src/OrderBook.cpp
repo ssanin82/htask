@@ -309,5 +309,65 @@ PRICE_T OrderBook::getMidPrice() {
     return (bids.begin()->first + asks.begin()->first) / 2;
 }
 
+std::vector<std::pair<PRICE_T, SIZE_T>> OrderBook::getTopBids(MktData md, int n) {
+    std::lock_guard<std::recursive_mutex> lg(lock);
+    std::vector<std::pair<PRICE_T, SIZE_T>> result;
+    if (!xchBids.contains(md)) return result;
+    
+    auto it = xchBids[md].begin();
+    int count = 0;
+    while (it != xchBids[md].end() && count < n) {
+        result.push_back(make_pair(it->first, it->second));
+        ++it;
+        ++count;
+    }
+    return result;
+}
+
+std::vector<std::pair<PRICE_T, SIZE_T>> OrderBook::getTopAsks(MktData md, int n) {
+    std::lock_guard<std::recursive_mutex> lg(lock);
+    std::vector<std::pair<PRICE_T, SIZE_T>> result;
+    if (!xchAsks.contains(md)) return result;
+    
+    auto it = xchAsks[md].begin();
+    int count = 0;
+    while (it != xchAsks[md].end() && count < n) {
+        result.push_back(make_pair(it->first, it->second));
+        ++it;
+        ++count;
+    }
+    return result;
+}
+
+std::vector<std::pair<PRICE_T, SIZE_T>> OrderBook::getTopBidsSynthetic(int n) {
+    std::lock_guard<std::recursive_mutex> lg(lock);
+    std::vector<std::pair<PRICE_T, SIZE_T>> result;
+    auto it = bids.begin();
+    int count = 0;
+    while (it != bids.end() && count < n) {
+        PRICE_T price = it->first;
+        SIZE_T sz = getSize(true, price);
+        result.push_back(make_pair(price, sz));
+        ++it;
+        ++count;
+    }
+    return result;
+}
+
+std::vector<std::pair<PRICE_T, SIZE_T>> OrderBook::getTopAsksSynthetic(int n) {
+    std::lock_guard<std::recursive_mutex> lg(lock);
+    std::vector<std::pair<PRICE_T, SIZE_T>> result;
+    auto it = asks.begin();
+    int count = 0;
+    while (it != asks.end() && count < n) {
+        PRICE_T price = it->first;
+        SIZE_T sz = getSize(false, price);
+        result.push_back(make_pair(price, sz));
+        ++it;
+        ++count;
+    }
+    return result;
+}
+
 }
 }

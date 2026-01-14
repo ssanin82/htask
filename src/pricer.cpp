@@ -25,6 +25,8 @@ using pubsub::SubscriptionRequest;
 using pubsub::BbaData;
 using pubsub::VolBandsData;
 using pubsub::PriceBandsData;
+using pubsub::OrderBookData;
+using pubsub::OrderBookLevel;
 using namespace htask::util;
 using std::cout, std::endl;
 
@@ -139,6 +141,93 @@ void publish(OrderBook& ob, PubSubServiceImpl& pub) {
     msgPbd.set_publish_ts_ms(ts_ms);
     *msgPbd.mutable_pbd() = pbd;
     pub.Publish(msgPbd);
+
+    // Publish individual order books
+    constexpr int OB_LEVELS = 10;
+    
+    // Binance
+    auto binanceBids = ob.getTopBids(MktData::Binance, OB_LEVELS);
+    auto binanceAsks = ob.getTopAsks(MktData::Binance, OB_LEVELS);
+    OrderBookData binanceOb;
+    binanceOb.set_exchange("binance");
+    for (const auto& [price, size]: binanceBids) {
+        OrderBookLevel* level = binanceOb.add_bids();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    for (const auto& [price, size]: binanceAsks) {
+        OrderBookLevel* level = binanceOb.add_asks();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    Message msgBinance;
+    msgBinance.set_topic("orderbook_binance");
+    msgBinance.set_publish_ts_ms(ts_ms);
+    *msgBinance.mutable_obd() = binanceOb;
+    pub.Publish(msgBinance);
+
+    // OKX
+    auto okxBids = ob.getTopBids(MktData::Okx, OB_LEVELS);
+    auto okxAsks = ob.getTopAsks(MktData::Okx, OB_LEVELS);
+    OrderBookData okxOb;
+    okxOb.set_exchange("okx");
+    for (const auto& [price, size]: okxBids) {
+        OrderBookLevel* level = okxOb.add_bids();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    for (const auto& [price, size]: okxAsks) {
+        OrderBookLevel* level = okxOb.add_asks();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    Message msgOkx;
+    msgOkx.set_topic("orderbook_okx");
+    msgOkx.set_publish_ts_ms(ts_ms);
+    *msgOkx.mutable_obd() = okxOb;
+    pub.Publish(msgOkx);
+
+    // Gate.io
+    auto gateioBids = ob.getTopBids(MktData::GateIo, OB_LEVELS);
+    auto gateioAsks = ob.getTopAsks(MktData::GateIo, OB_LEVELS);
+    OrderBookData gateioOb;
+    gateioOb.set_exchange("gateio");
+    for (const auto& [price, size]: gateioBids) {
+        OrderBookLevel* level = gateioOb.add_bids();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    for (const auto& [price, size]: gateioAsks) {
+        OrderBookLevel* level = gateioOb.add_asks();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    Message msgGateio;
+    msgGateio.set_topic("orderbook_gateio");
+    msgGateio.set_publish_ts_ms(ts_ms);
+    *msgGateio.mutable_obd() = gateioOb;
+    pub.Publish(msgGateio);
+
+    // Synthetic
+    auto syntheticBids = ob.getTopBidsSynthetic(OB_LEVELS);
+    auto syntheticAsks = ob.getTopAsksSynthetic(OB_LEVELS);
+    OrderBookData syntheticOb;
+    syntheticOb.set_exchange("synthetic");
+    for (const auto& [price, size]: syntheticBids) {
+        OrderBookLevel* level = syntheticOb.add_bids();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    for (const auto& [price, size]: syntheticAsks) {
+        OrderBookLevel* level = syntheticOb.add_asks();
+        level->set_price(price);
+        level->set_size(size);
+    }
+    Message msgSynthetic;
+    msgSynthetic.set_topic("orderbook_synthetic");
+    msgSynthetic.set_publish_ts_ms(ts_ms);
+    *msgSynthetic.mutable_obd() = syntheticOb;
+    pub.Publish(msgSynthetic);
 }
 
 int main(int argc, char* argv[]) {

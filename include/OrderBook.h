@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include <vector>
 
 #include "util.h"
 
@@ -43,6 +44,12 @@ class OrderBook {
         PRICE_T getVolumePriceMln(bool isBid, int x);
         PRICE_T getMidPrice();
         void clear();
+
+        // Get top N levels for a specific exchange or synthetic
+        std::vector<std::pair<PRICE_T, SIZE_T>> getTopBids(MktData md, int n);
+        std::vector<std::pair<PRICE_T, SIZE_T>> getTopAsks(MktData md, int n);
+        std::vector<std::pair<PRICE_T, SIZE_T>> getTopBidsSynthetic(int n);
+        std::vector<std::pair<PRICE_T, SIZE_T>> getTopAsksSynthetic(int n);
 
         // for run-time manual diagnostics only
         void print();
