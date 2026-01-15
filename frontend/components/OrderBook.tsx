@@ -10,12 +10,16 @@ interface OrderBookProps {
 
 export function OrderBook({ bids, asks, title }: OrderBookProps) {
   const formatPrice = (price: number) => price.toFixed(2)
-  const formatSize = (size: number) => size.toFixed(8)
+  const formatSize = (size: number) => {
+    // Format with up to 8 decimal places, then remove trailing zeros
+    const formatted = size.toFixed(8)
+    return formatted.replace(/\.?0+$/, '')
+  }
 
   return (
     <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
       <h2 className="text-xl font-semibold mb-4 text-center">{title}</h2>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         {/* Bids */}
         <div>
           <div className="text-sm font-semibold mb-2 text-green-400">BIDS</div>
@@ -24,10 +28,10 @@ export function OrderBook({ bids, asks, title }: OrderBookProps) {
               bids.slice(0, 10).map((bid, idx) => (
                 <div
                   key={idx}
-                  className="flex justify-between text-sm bg-green-900/20 px-2 py-1 rounded"
+                  className="flex justify-between items-center text-sm bg-green-900/20 px-3 py-1 rounded gap-4"
                 >
-                  <span className="text-green-400">{formatPrice(bid.price)}</span>
-                  <span className="text-gray-300">{formatSize(bid.size)}</span>
+                  <span className="text-green-400 font-mono">{formatPrice(bid.price)}</span>
+                  <span className="text-gray-300 font-mono text-right">{formatSize(bid.size)}</span>
                 </div>
               ))
             ) : (
@@ -44,10 +48,10 @@ export function OrderBook({ bids, asks, title }: OrderBookProps) {
               asks.slice(0, 10).map((ask, idx) => (
                 <div
                   key={idx}
-                  className="flex justify-between text-sm bg-red-900/20 px-2 py-1 rounded"
+                  className="flex justify-between items-center text-sm bg-red-900/20 px-3 py-1 rounded gap-4"
                 >
-                  <span className="text-red-400">{formatPrice(ask.price)}</span>
-                  <span className="text-gray-300">{formatSize(ask.size)}</span>
+                  <span className="text-red-400 font-mono">{formatPrice(ask.price)}</span>
+                  <span className="text-gray-300 font-mono text-right">{formatSize(ask.size)}</span>
                 </div>
               ))
             ) : (
