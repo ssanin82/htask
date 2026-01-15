@@ -89,3 +89,10 @@ All to be done from the root folder of the project.
 - Tracing notional volume bands: `docker-compose logs -f get_vbd`
 - Tracing mid price with "deviations": `docker-compose logs -f get_pbd`
 - NOTE I did try uploading the image to DockerHub to save time on verifying the task, but considering the size of that image (several gigabytes), pulling it from DockerHub is not much faster, if at all, compared to building it from Dockerfile
+
+## Build Locally
+```Bash
+conan install . -of build --build=missing
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+cmake --build build --parallel
+```
