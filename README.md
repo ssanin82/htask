@@ -1,4 +1,5 @@
 # Simple Price Aggregator
+![Screenshot](Screenshot-htask.png)
 
 Aggregates spot BTCUSDT prices from 3 sources:
 - Binance
@@ -96,3 +97,6 @@ conan install . -of build --build=missing
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
 cmake --build build --parallel
 ```
+
+## Frontend
+Refer to `frontend` folder to see how to build and run the frontend.
