@@ -3,7 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
-  title: 'Order Book Dashboard',
+  title: 'Order Book Dashboard (Bitcoin Price)',
   description: 'Real-time order book visualization',
 }
 
